@@ -1,7 +1,22 @@
 # Local development verification
 
-Verified on October 2, 2026, on Fedora 44 with GCC 16.2.1, Qt 6.11.2 and
-a native Wayland session. Application code checkpoint: `289d90c`.
+Initial standalone verification was on October 2, 2026, on Fedora 44 with
+GCC 16.2.1, Qt 6.11.2 and native Wayland, at initial source checkpoint
+`289d90c`. Later checkpoint results and phase-1 closure are recorded below.
+
+## Phase 1 closure
+
+D1 is complete. Current-source native editor/photo, full raster UI and queued
+cancellation workflows passed, alongside Intel GPU/CPU correctness with
+synchronization validation, native Vulkan/fallback lifecycle and backend/tab
+brush transitions. The complete default suite now passes **42/42 tests** in
+**15.49 seconds**. The installed app completed its retained 15-step demo.
+
+The [phase-1 acceptance record](docs/raster-delivery-acceptance.md) lists exact
+checks, environments, scope and reproduction. It supersedes the earlier pending
+native status for this development delivery; the earlier 35/41-test and locked
+session records below remain historical evidence. Original expanded M3, broad
+LP8 and professional replacement-release qualification remain outstanding.
 
 ## Initial standalone checks
 

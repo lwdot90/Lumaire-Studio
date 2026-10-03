@@ -20,8 +20,8 @@ by the present development build.
 
 ## Current position
 
-**The raster development checkpoint is delivered. Active feature development
-can proceed beyond M3; its outstanding qualification is tracked separately.**
+**D1 — raster development delivery is complete. The next feature phase is D2
+— revisable photo editing. Outstanding broader qualification is tracked separately.**
 
 At source checkpoint `55937cf`, the application has brush/erase, affine layer
 transforms, source-preserving crop/canvas resize, hard rectangle/ellipse
@@ -36,7 +36,9 @@ photo workflow and 15-step app demo passed. A retained-history 4000×3000
 photo-adjust/save/reopen/export observation passed in about 24 seconds, with
 about 401 MiB highest sampled process RSS. See [VALIDATION](VALIDATION.md) for
 exact scope. Earlier native/GPU results belong to their recorded checkpoints.
-The latest feature checkpoint still needs native input/frame verification.
+D1 subsequently passed current-source native UI, Intel GPU/CPU comparisons,
+Vulkan/fallback lifecycle and the complete 42-test suite. See the
+[phase-1 acceptance record](docs/raster-delivery-acceptance.md).
 
 Pixel adjustments are destructive commands, not revisable adjustment layers.
 Canvas resize does not supply a complete image-resampling workflow. Current ICC
@@ -60,8 +62,8 @@ milestone sequencing stall. The new boundary is explicit:
 
 | Gate | Current status | Execution point / responsibility |
 | --- | --- | --- |
-| H1: latest native CPU UI, accepted frames, tool/dialog input, tab cancellation and edit/save/reopen/export | Pending on `55937cf`; offscreen equivalents passed | Next desktop verification; coordinator |
-| H2: current-source native Intel/Vulkan comparison, validation and fallback lifecycle | Earlier checkpoint evidence only | Renderer qualification lane; renderer owner |
+| H1: latest native CPU UI, accepted frames, tool/dialog input, tab cancellation and edit/save/reopen/export | Passed: native editor/photo/full-raster workflows and independent-tab cancellation | D1 acceptance; maintain as regressions |
+| H2: current-source native Intel/Vulkan comparison, validation and fallback lifecycle | Passed on current application source: Intel full harness, validated native lifecycle and GPU-to-CPU transitions | D1 acceptance; maintain as regressions |
 | Q1: exact P08 10,000-layer / 600-event protocol, handler p95 ≤4 ms | Recorded native aggregate failed; no replacement pass | Reproduce and isolate handler cost; UI/performance owner |
 | Q2: full P03 4K viewport, eight full-cover 4096² layers, four masks and fixed pan/zoom trace | Pending; basic masks now exist, full fixture/trace and reference timings unexecuted; original discrete-GPU p95 ≤16.7 ms retained | Composite integration, then available hardware qualification |
 | Q3: full P07 10,000² image, 100 genuine brush edits, save/reopen and exact canonical tiles | Pending; basic brush now exists, full scenario unexecuted | Paint/storage integration; original idle RSS ≤6 GiB on 32 GiB references remains separate |
@@ -82,7 +84,7 @@ or canceled operation must preserve the previous committed document.
 
 | Phase | Deliverable | Finite finished-work gate |
 | --- | --- | --- |
-| D1 — Raster development delivery | The delivered editing tool set; bounded failure/cancellation; remaining H1/H2 checks | Import → paint/erase → transform → selection/mask → adjustment → undo → native save/reopen → PNG/JPEG through real UI. Record native/fallback results separately. No professional replacement claim. |
+| D1 — Raster development delivery (complete) | Delivered editing tool set, bounded failure/cancellation and passed H1/H2 checks | Import → paint/erase → transform → selection/mask → adjustment → undo → native save/reopen → PNG/JPEG through real UI. Record native/fallback results separately. No professional replacement claim. |
 | D2 — Revisable photo editing | Persisted adjustment parameters/layers, live drafts, histogram, per-channel curves, soft masks, clone/healing and defined image resampling | Retouch and grade a portrait/product; reopen, revise mask boundaries and adjustment/retouch strength, and export without reconstructing flattened edits. |
 | D3 — Professional compositing | Selection algebra/feathering/lasso, richer masks/clipping, isolated groups, editable source objects, effects and source-preserving transforms | Build a ten-source advertising composite; reopen, replace a source, revise placement/grade, retain required fine-edge/translucent detail and export. |
 | D4 — Editable graphic design | Point/paragraph text and shaping, vectors/paths, guides, alignment/distribution, layout variants and persisted styles | Create poster/social variants; reopen and change wording/font/layout. Text remains text, vectors remain vectors and style parameters remain editable. |
@@ -102,8 +104,7 @@ separate dependency/fixture decisions and cannot inherit raster-only evidence.
 
 ## Next bounded work queue
 
-1. Execute H1 when the native desktop is available, and record H2's precise
-   current-source gap. These checks do not prevent independent D2 implementation.
+1. Preserve the completed D1/H1/H2 checks as regression coverage.
 2. Freeze D2's persisted adjustment/draft contract and its portrait/product
    fixture, expected deliverables and revision request before coding.
 3. Deliver the first D2 packet: one revisable adjustment with live preview,
