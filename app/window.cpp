@@ -1,5 +1,6 @@
 #include "app/editing_menus.h"
 #include "app/color_panel.h"
+#include "app/job_progress_widget.h"
 #include "app/application_icon.h"
 #include "app/editor_theme.h"
 #include "app/panel_icons.h"
@@ -203,7 +204,7 @@ MainWindow::MainWindow(QVulkanInstance* instance,bool cpu,QString deviceName,std
     if(auto* photo=findChild<QDockWidget*>("photoEditingDock")) {
         splitDockWidget(photo,layers,Qt::Vertical);tabifyDockWidget(photo,properties);tabifyDockWidget(photo,colorDock);colorDock->raise();
         for(auto* panel:{photo,properties,colorDock}) {auto* title=new QWidget(panel);title->setFixedHeight(0);panel->setTitleBarWidget(title);}
-        resizeDocks({colorDock,layers},{250,410},Qt::Vertical);
+        resizeDocks({colorDock,layers},{310,350},Qt::Vertical);
     }
     view->addAction(colorDock->toggleViewAction());
     setTabPosition(Qt::RightDockWidgetArea,QTabWidget::North);
@@ -245,6 +246,21 @@ MainWindow::MainWindow(QVulkanInstance* instance,bool cpu,QString deviceName,std
         .arg(resources_->limits.lowMemory ? "low memory" : "standard").arg(resources_->limits.computeWorkers)
         .arg(resources_->limits.canonicalTiles/(1024*1024)).arg(resources_->limits.gpuFrame/(1024*1024)));
     if(!resources_->storageError.empty()) diagnostics_->appendPlainText(QString("Disk spill unavailable: %1").arg(QString::fromStdString(resources_->storageError)));
+    auto* progress=new JobProgressWidget(this);
+    statusBar()->addPermanentWidget(progress);
+    connect(this,&MainWindow::editingContextChanged,this,[this,progress,activePage=static_cast<QWidget*>(nullptr)]() mutable {
+        auto* page=tabs_->currentWidget();
+        if(page!=activePage) {progress->setState(false);activePage=page;}
+        const auto found=sessions_.find(page);
+        progress->setState(found!=sessions_.end() && found->second->busy,
+            found!=sessions_.end() && found->second->stop.stop_requested());
+    });
+    connect(progress,&JobProgressWidget::cancelRequested,this,[this,progress] {
+        const auto found=sessions_.find(tabs_->currentWidget());
+        if(found==sessions_.end() || !found->second->busy) return;
+        found->second->stop.request_stop();progress->setState(true,true);
+        statusBar()->showMessage("Cancelling current operation…");
+    });
     zoomInfo_=new QLabel("100%",this);zoomInfo_->setMinimumWidth(48);zoomInfo_->setAlignment(Qt::AlignCenter);
     statusBar()->addPermanentWidget(zoomInfo_);
     for(const auto entry:{std::pair{fit,"Fit"},std::pair{actual,"100%"}}) {
@@ -621,7 +637,30 @@ void MainWindow::setSelectionCurrent(std::optional<engine::Selection> selection)
 void MainWindow::createMaskCurrent(bool fromSelection) {runEdit("Create layer mask",[tiles=tileStore_,fromSelection](auto input,auto target,auto stop){if(!target) throw std::invalid_argument("Select a raster layer");return engine::createLayerMask(input,*target,*tiles,fromSelection,stop);});}
 void MainWindow::removeMaskCurrent() {runEdit("Remove layer mask",[](auto input,auto target,auto){if(!target) throw std::invalid_argument("Select a raster layer");return engine::removeLayerMask(input,*target);});}
 void MainWindow::enableMaskCurrent(bool enabled) {runEdit("Toggle layer mask",[enabled](auto input,auto target,auto){if(!target) throw std::invalid_argument("Select a raster layer");return engine::setLayerMaskEnabled(input,*target,enabled);});}
-void MainWindow::applyAdjustment(engine::AdjustmentParameters parameters) {runEdit("Adjust pixels",[tiles=tileStore_,parameters](auto input,auto target,auto stop){if(!target) throw std::invalid_argument("Select a raster layer");return engine::adjustLayer(input,*target,*tiles,parameters,stop);});}
+void MainWindow::applyAdjustment(engine::AdjustmentParameters parameters) {
+    if(!currentDocument() || currentBusy()) return;
+    try {
+        if(engine::adjustmentIsNeutral(parameters)) return;
+    } catch(const std::exception& error) {
+        const auto message=QString::fromUtf8(error.what());
+        diagnostics_->appendPlainText(message);statusBar()->showMessage(message);
+        emit operationFinished(false,message);return;
+    }
+    const char* name="Adjust pixels";
+    switch(parameters.kind) {
+        case engine::AdjustmentKind::Exposure:name="Exposure";break;
+        case engine::AdjustmentKind::Brightness:name="Brightness";break;
+        case engine::AdjustmentKind::Contrast:name="Contrast";break;
+        case engine::AdjustmentKind::Saturation:name="Saturation";break;
+        case engine::AdjustmentKind::Levels:name="Levels";break;
+        case engine::AdjustmentKind::Curves:name="Curves";break;
+        case engine::AdjustmentKind::ColorBalance:name="Color Balance";break;
+    }
+    runEdit(name,[tiles=tileStore_,parameters=std::move(parameters)](auto input,auto target,auto stop){
+        if(!target) throw std::invalid_argument("Select a raster layer");
+        return engine::adjustLayer(input,*target,*tiles,parameters,stop);
+    });
+}
 void MainWindow::exportCurrentTo(const QString& suppliedPath,io::ExportOptions options) {
     if(currentBusy() || !currentDocument()) return;
     auto* page=tabs_->currentWidget();const auto input=currentDocument();const auto path=QFileInfo(suppliedPath).absoluteFilePath();

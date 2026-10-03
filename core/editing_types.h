@@ -4,6 +4,7 @@
 #include <cmath>
 #include <optional>
 #include <stdexcept>
+#include <vector>
 
 namespace compositor::engine {
 enum class SelectionShape { Rectangle, Ellipse };
@@ -41,9 +42,22 @@ struct BrushSettings {
 struct TransformParameters {
     double dx=0,dy=0,scaleX=1,scaleY=1,rotationDegrees=0;
 };
-enum class AdjustmentKind { Exposure, Brightness, Contrast, Saturation };
+enum class AdjustmentKind { Exposure, Brightness, Contrast, Saturation, Levels, Curves, ColorBalance };
+struct LevelsParameters {
+    double inputBlack=0,inputWhite=1,gamma=1,outputBlack=0,outputWhite=1;
+};
+struct CurvePoint {
+    double input=0,output=0;
+    bool operator==(const CurvePoint&) const = default;
+};
+struct ColorBalanceParameters {
+    double warmth=0,tint=0; // Relative RGB correction, not Kelvin temperature.
+};
 struct AdjustmentParameters {
     AdjustmentKind kind=AdjustmentKind::Exposure;
     double value=0;
+    LevelsParameters levels;
+    std::vector<CurvePoint> curve{{0,0},{1,1}};
+    ColorBalanceParameters colorBalance;
 };
 }

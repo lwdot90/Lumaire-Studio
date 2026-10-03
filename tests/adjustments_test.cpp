@@ -51,7 +51,7 @@ void historyAndSharing() {
     auto first=single->singleLayer(),second=first;second.id=Id::generate();second.siblingOrder=1;
     auto document=std::make_shared<const DocumentSnapshot>(single->id,2,1,72,std::vector<LayerNode>{first,second});
     DocumentHistory history(document);
-    for(const auto parameters:{AdjustmentParameters{AdjustmentKind::Exposure,0},AdjustmentParameters{AdjustmentKind::Brightness,0},
+    for(const auto& parameters:{AdjustmentParameters{AdjustmentKind::Exposure,0},AdjustmentParameters{AdjustmentKind::Brightness,0},
         AdjustmentParameters{AdjustmentKind::Contrast,0},AdjustmentParameters{AdjustmentKind::Saturation,1}})
         expect(!history.commit(adjustLayer(history.current(),first.id,store,parameters),"Neutral"),"Neutral adjustment created an undo entry");
     expect(history.commit(adjustLayer(history.current(),first.id,store,{AdjustmentKind::Exposure,1}),"Exposure"),

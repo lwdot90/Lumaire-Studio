@@ -74,6 +74,18 @@ public:
             steps_.push_back({"Adjust exposure",[this] {
                 window_.applyAdjustment({engine::AdjustmentKind::Exposure,.4});
             }});
+            steps_.push_back({"Adjust levels",[this] {
+                engine::AdjustmentParameters levels;levels.kind=engine::AdjustmentKind::Levels;
+                levels.levels.gamma=1.1;window_.applyAdjustment(levels);
+            }});
+            steps_.push_back({"Adjust curves",[this] {
+                engine::AdjustmentParameters curves;curves.kind=engine::AdjustmentKind::Curves;
+                curves.curve={{0,0},{.25,.28},{.5,.53},{.75,.77},{1,1}};window_.applyAdjustment(curves);
+            }});
+            steps_.push_back({"Adjust color balance",[this] {
+                engine::AdjustmentParameters balance;balance.kind=engine::AdjustmentKind::ColorBalance;
+                balance.colorBalance={.08,-.03};window_.applyAdjustment(balance);
+            }});
             steps_.push_back({"Clear selection",[this]{window_.setSelectionCurrent(std::nullopt);}});
             steps_.push_back({"Transform layer",[this] {
                 engine::TransformParameters transform;transform.dx=5;transform.dy=-2;transform.rotationDegrees=3;

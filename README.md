@@ -10,7 +10,8 @@ The current development editor provides:
 - PNG/JPEG import, layered compositing, 24 blend modes, pass-through folders,
   opacity, visibility and immutable layer duplication.
 - Brush and erase, source-preserving move/scale/rotate, crop and resize,
-  rectangular/elliptical selections, linked raster masks and basic adjustments.
+  rectangular/elliptical selections, linked raster masks and seven pixel adjustments:
+  Exposure, Brightness, Contrast, Saturation, Levels, Curves and Color Balance.
 - Undo/redo, editable `.cproj` saving and reopening, and flattened PNG/JPEG export.
 - Vulkan presentation with CPU fallback, bounded resident storage and verified
   session spill for immutable tiles and history.

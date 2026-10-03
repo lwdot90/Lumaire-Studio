@@ -1,4 +1,4 @@
-# Basic destructive adjustment commands
+# Destructive adjustment commands
 
 > Export note: Recorded validation results are historical source-repository observations, not qualification of this standalone repository. Commands use the standalone layout.
 
@@ -9,13 +9,10 @@ transaction and leaves the immutable input, duplicate layers and history intact.
 Folders are rejected; the target raster's extent, identity/profile metadata,
 layer placement/name/opacity/blend and document resolution remain intact.
 
-This is the first usable destructive adjustment surface, derived from upstream
-`Document/ImageAdjustments.swift`, `Document/PixelAdjust.swift` and
-`Rendering/AdjustPixels.c`. It uses FP32 tile-local arithmetic and existing
-canonical binary16 storage rather than the macOS RGBA8 whole-image buffer.
-These four commands are explicit Linux numerical definitions. They do not
-implement all upstream adjustment settings, non-destructive adjustment layers,
-Photoshop fixture parity or preservation of a new native RGB16/FP32 format.
+Seven destructive commands use FP32 tile-local arithmetic and the existing
+canonical binary16 pixel storage. They do not create adjustment layers or a new
+native precision format. The original four command definitions remain unchanged;
+Levels, Curves and Color Balance extend the same transaction surface.
 
 | Command | Value range | Definition |
 |---|---|---|
@@ -23,13 +20,21 @@ Photoshop fixture parity or preservation of a new native RGB16/FP32 format.
 | Brightness | -1..1 | Add value to bounded straight encoded sRGB components |
 | Contrast | -0.95..4 | 0.5 + (encodedComponent-0.5)*(1+value), then bound to 0..1 |
 | Saturation | 0..2 | L + (encodedComponent-L)*value, then bound to 0..1; L=0.2126R+0.7152G+0.0722B |
+| Levels | Input/output points 0..1; gamma 0.1..10 | outputBlack + (outputWhite-outputBlack) × clamp((encodedComponent-inputBlack)/(inputWhite-inputBlack),0,1)^(1/gamma) |
+| Curves | 2..16 points; strictly increasing input from 0 to 1; output 0..1 | Piecewise-linear interpolation, applied independently with the same curve to R/G/B |
+| Color Balance | Warmth/tint -1..1 | Premultiplied linear R × 2^warmth, G × 2^(-tint), B × 2^(-warmth) |
 
-Alpha is unchanged. Exposure retains extended/negative linear RGB when finite
-binary16 can represent it; overflow rejects the entire command. Brightness,
-contrast and saturation use the bounded straight encoded sRGB domain, explicitly
-clipping extended input for these operations. Neutral exposure/brightness/
-contrast value 0 and saturation value 1 preserve the exact input without a new
-history entry or clipping. Alpha-zero pixels remain canonical transparent zero.
+Alpha is unchanged. Exposure and Color Balance retain extended/negative linear
+RGB when finite binary16 can represent it; overflow rejects the entire command.
+Brightness, contrast, saturation, Levels and Curves use bounded straight encoded
+sRGB, clipping extended input when a nonneutral command runs. Neutral exposure/
+brightness/contrast value 0, saturation value 1, default Levels, identity Curves
+(all input/output points equal), and zero Warmth/Tint return the exact input
+without clipping, a history entry or discarded redo. Alpha-zero pixels remain
+canonical transparent zero. Levels requires inputBlack < inputWhite and
+outputBlack <= outputWhite. Nonfinite/out-of-range parameters and malformed
+curves fail before publication. See [photo adjustments](photo-adjustments.md)
+for the desktop controls and their display-unit conversion.
 
 Selection lives in document coordinates. Target layer placements already map
 to document coordinates; folders supply hierarchy rather than an additional
@@ -52,16 +57,14 @@ admitting document/transaction metadata and scheduling the command on a worker;
 the command itself does not allocate a full-raster pixel buffer. Existing tile
 and spill admission cover each published output tile.
 
-Tests cover independent exposure/encoded-brightness/contrast/desaturation
-fixtures, alpha and transparent zeros, immutable duplicate sharing, exactly one
-undo/redo step, neutral no-ops, document-space placement inside a folder, fractional rectangle
-coverage, inverted selection, an independent 52/64 ellipse-grid fixture, sparse
-negative-origin defaults at tile boundaries, admission refusal, invalid values
-and cancellation after the first output tile. A late exposure-overflow fixture
-changes the first tile before rejecting the final tile, proving that failed
-canonical representability publishes no partial output. The output uses existing canonical
-raster records; project IO needs no new adjustment record or schema to preserve
-its pixels. Parent compilation and execution remain pending for this packet.
+The authored fixtures exercise analytic adjustment output, canonical native
+persistence, alpha/profile/selection/placement preservation, immutable inputs,
+neutral history behavior, cancellation, admission refusal and representability
+failure. These commands save as edited raster pixels in existing `.cproj` v3
+records, not serialized adjustment parameters; older project readers remain
+supported without a format bump. Compilation and authored test coverage alone
+do not establish a passed run or native/large-image qualification. Executed
+checks are recorded separately in [local verification](../VALIDATION.md).
 
 ## Shared selection coverage
 

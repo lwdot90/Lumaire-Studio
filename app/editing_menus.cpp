@@ -1,5 +1,6 @@
 #include "app/editing_menus.h"
 #include "app/window.h"
+#include "app/photo_adjustment_dialog.h"
 #include "core/editor_commands.h"
 #include <QAction>
 #include <QDialog>
@@ -46,6 +47,18 @@ QIcon adjustmentIcon(engine::AdjustmentKind kind) {
             drop.cubicTo(5,24,19,24,19,15);drop.cubicTo(19,11,14,7,12,3);drop.closeSubpath();
             painter.drawPath(drop);painter.drawArc(QRectF(8,11,8,8),210*16,80*16);break;
         }
+        case engine::AdjustmentKind::Levels:
+            for(int i=0;i<6;++i) painter.drawLine(QPointF(4+i*3,20),QPointF(4+i*3,18-(i%3)*5));
+            painter.drawLine(QPointF(3,21),QPointF(22,21));break;
+        case engine::AdjustmentKind::Curves: {
+            painter.drawRect(QRectF(3,3,18,18));
+            QPainterPath curve;curve.moveTo(3,21);curve.cubicTo(15,21,9,3,21,3);painter.drawPath(curve);break;
+        }
+        case engine::AdjustmentKind::ColorBalance:
+            painter.drawLine(QPointF(12,3),QPointF(12,21));painter.drawLine(QPointF(3,8),QPointF(21,8));
+            painter.drawLine(QPointF(6,8),QPointF(3,16));painter.drawLine(QPointF(6,8),QPointF(9,16));
+            painter.drawLine(QPointF(18,8),QPointF(15,16));painter.drawLine(QPointF(18,8),QPointF(21,16));
+            painter.drawLine(QPointF(3,16),QPointF(9,16));painter.drawLine(QPointF(15,16),QPointF(21,16));break;
     }
     painter.end();return QIcon(image);
 }
@@ -183,7 +196,10 @@ void installEditingMenus(MainWindow& window) {
     for(const auto entry:{AdjustmentMenu{"Exposure…","exposureAdjustmentAction","Light","Exposure (stops)",engine::AdjustmentKind::Exposure,-8,8,0},
                          AdjustmentMenu{"Brightness…","brightnessAdjustmentAction","Tonal intensity","Brightness (0 unchanged)",engine::AdjustmentKind::Brightness,-1,1,0},
                          AdjustmentMenu{"Contrast…","contrastAdjustmentAction","Tonal separation","Contrast (0 unchanged)",engine::AdjustmentKind::Contrast,-.95,4,0},
-                         AdjustmentMenu{"Saturation…","saturationAdjustmentAction","Color intensity","Saturation (1 unchanged)",engine::AdjustmentKind::Saturation,0,2,1}}) {
+                         AdjustmentMenu{"Saturation…","saturationAdjustmentAction","Color intensity","Saturation (1 unchanged)",engine::AdjustmentKind::Saturation,0,2,1},
+                         AdjustmentMenu{"Levels…","levelsAdjustmentAction","Black point, midtones and white point","",engine::AdjustmentKind::Levels,0,0,0},
+                         AdjustmentMenu{"Curves…","curvesAdjustmentAction","Edit the tonal response curve","",engine::AdjustmentKind::Curves,0,0,0},
+                         AdjustmentMenu{"Color Balance…","colorBalanceAdjustmentAction","Warmth and green–magenta tint","",engine::AdjustmentKind::ColorBalance,0,0,0}}) {
         auto* item=action(adjust,QString::fromUtf8(entry.label),entry.name);
         item->setEnabled(ready(window,true));
         item->setIcon(adjustmentIcon(entry.kind));
@@ -201,6 +217,12 @@ void installEditingMenus(MainWindow& window) {
         QObject::connect(item,&QAction::triggered,&window,[&window,entry]{
             if(!ready(window,true)) return;
             const auto document=window.currentDocument();const auto selected=window.activeLayer();
+            if(entry.kind==engine::AdjustmentKind::Levels || entry.kind==engine::AdjustmentKind::Curves || entry.kind==engine::AdjustmentKind::ColorBalance) {
+                PhotoAdjustmentDialog dialog(entry.kind,&window);
+                if(dialog.exec()==QDialog::Accepted && document==window.currentDocument() && selected==window.activeLayer() && ready(window,true))
+                    window.applyAdjustment(dialog.parameters());
+                return;
+            }
             bool accepted=false;
             const auto value=QInputDialog::getDouble(&window,QString::fromUtf8(entry.label),QString::fromUtf8(entry.valueLabel),entry.neutral,entry.minimum,entry.maximum,3,&accepted);
             if(accepted && document==window.currentDocument() && selected==window.activeLayer() && ready(window,true)) window.applyAdjustment({entry.kind,value});

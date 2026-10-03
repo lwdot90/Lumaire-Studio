@@ -9,15 +9,17 @@ slice, not completion of that target.
 
 The application exposes layered PNG/JPEG workflows, brush/erase, transforms,
 source-preserving crop/resize, hard rectangular/elliptical selections, linked
-raster masks, four basic pixel adjustments, undo/redo, editable native projects
-and PNG/JPEG export. It has 24 legacy blend modes, pass-through folder opacity,
+raster masks, seven pixel adjustments (Exposure, Brightness, Contrast, Saturation,
+Levels, Curves and Color Balance), undo/redo, editable native projects and
+PNG/JPEG export. It has 24 legacy blend modes, pass-through folder opacity,
 Vulkan presentation and CPU fallback. Its compact contextual workspace includes
 a Color panel, tool strip, tool options and Layers/Properties controls.
 
 Resource infrastructure includes admitted immutable resident backing, temporary
 verified disk spill, bounded worker scheduling and streamed project tile IO.
 These components do not prove all imported decoder peaks, desktop coexistence,
-large-image latency or recovery behavior.
+large-image latency or recovery behavior. Adding the photo-adjustment commands
+does not close formal M3; native/runtime qualification remains pending.
 
 ## Pending capability work
 
