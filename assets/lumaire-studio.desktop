@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Lumaire Studio
+GenericName=Image Editor
+Comment=Edit photos and compose layered images
+Exec=lumaire-studio %F
+Icon=lumaire-studio
+Terminal=false
+Categories=Graphics;2DGraphics;RasterGraphics;
+MimeType=image/png;image/jpeg;application/x-lumaire-project;
+StartupNotify=true

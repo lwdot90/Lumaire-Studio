@@ -1,0 +1,33 @@
+name: Core correctness
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [g++, clang++]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Install core build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends cmake ninja-build g++ clang
+      - name: Configure core-only
+        run: cmake --preset core-only -B build/ci-core -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+      - name: Build serially
+        run: cmake --build build/ci-core --parallel 1
+      - name: Run core tests serially
+        run: ctest --test-dir build/ci-core --output-on-failure --parallel 1

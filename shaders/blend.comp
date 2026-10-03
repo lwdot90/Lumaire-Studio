@@ -1,0 +1,139 @@
+#version 450
+// IDs 0..12 preserve LayerAppearance.swift order; IDs 13..23 append the Linux
+// contract. Pixel equations follow core/blend.cpp, including endpoint guards.
+layout(local_size_x=64) in;
+layout(set=0,binding=0,std430) readonly buffer Sources { vec4 sourcePixels[]; };
+layout(set=0,binding=1,std430) readonly buffer Backdrops { vec4 backdropPixels[]; };
+layout(set=0,binding=2,std430) writeonly buffer Outputs { vec4 outputPixels[]; };
+layout(push_constant) uniform Parameters { uint count; uint mode; } parameters;
+
+// Frozen threshold bits are uploaded once from core/hard_mix_thresholds.h.
+layout(set=0,binding=3,std430) readonly buffer HardMixThresholds { uint hardMixThresholdBits[]; };
+float hardMixThreshold(uint index) { return uintBitsToFloat(hardMixThresholdBits[index]); }
+uint hardMixCode(float channel,float alpha) {
+    uint low=0,high=4096;
+    while(low<high) {
+        uint middle=(low+high)/2;
+        precise float boundary=hardMixThreshold(middle)*alpha;
+        if(channel>=boundary) low=middle+1;
+        else high=middle;
+    }
+    return low;
+}
+float hardMix(float d,float da,float s,float sa) {
+    // Burn's white-backdrop precedence and Dodge's black-backdrop precedence.
+    if(d>=da) return 1;
+    if(d<=0) return 0;
+    if(s<=0) return 0;
+    if(s>=sa) return 1;
+    return hardMixCode(d,da)+hardMixCode(s,sa)>=4096 ? 1 : 0;
+}
+
+float encode(float v) { return v<=0.0031308 ? 12.92*v : 1.055*pow(v,1.0/2.4)-0.055; }
+float decode(float v) { return v<=0.04045 ? v/12.92 : pow((v+0.055)/1.055,2.4); }
+float code(float v,float alpha) {
+    if(v<=0) return 0;
+    if(v>=alpha) return 1;
+    return clamp(encode(v/alpha),0,1);
+}
+float luminosity(vec3 c) { precise float v=0.3*c.r+0.59*c.g+0.11*c.b; return v; }
+float saturation(vec3 c) { return max(max(c.r,c.g),c.b)-min(min(c.r,c.g),c.b); }
+vec3 withLuminosity(vec3 c,float target) {
+    if(c.r==c.g && c.g==c.b) return vec3(target);
+    if(target<=0) return vec3(0);
+    if(target>=1) return vec3(1);
+    precise vec3 result=c+(target-luminosity(c));
+    float l=luminosity(result),low=min(min(result.r,result.g),result.b),high=max(max(result.r,result.g),result.b);
+    if(low<0) {
+        if(l<=low) return vec3(target);
+        result=vec3(l)+(result-vec3(l))*l/(l-low);
+    }
+    if(high>1) {
+        if(high<=l) return vec3(target);
+        result=vec3(l)+(result-vec3(l))*(1-l)/(high-l);
+    }
+    return result;
+}
+vec3 withSaturation(vec3 c,float target) {
+    ivec3 order=ivec3(0,1,2); int swap;
+    if(c[order.x]>c[order.y]) {swap=order.x;order.x=order.y;order.y=swap;}
+    if(c[order.y]>c[order.z]) {swap=order.y;order.y=order.z;order.z=swap;}
+    if(c[order.x]>c[order.y]) {swap=order.x;order.x=order.y;order.y=swap;}
+    precise vec3 result=c;
+    if(c[order.z]>c[order.x]) {
+        result[order.y]=(c[order.y]-c[order.x])*target/(c[order.z]-c[order.x]); result[order.z]=target;
+    } else {result[order.y]=0;result[order.z]=0;}
+    result[order.x]=0; return result;
+}
+float dodge(float d,float s) {
+    precise float result=d==0 ? 0 : s==1 ? 1 : min(1,d/(1-s));
+    return result;
+}
+float burn(float d,float s) {
+    precise float result=d==1 ? 1 : s==0 ? 0 : 1-min(1,(1-d)/s);
+    return result;
+}
+float vivid(float d,float s) {
+    precise float value=s<=0.5 ? burn(d,2*s) : dodge(d,2*s-1);
+    return value;
+}
+float component(float d,float s,uint mode) {
+    precise float result=0;
+    switch(mode) {
+        case 1:result=d*s;break;
+        case 2:result=d+s-d*s;break;
+        case 3:result=d<=0.5 ? 2*d*s : 1-2*(1-d)*(1-s);break;
+        case 4:result=min(d,s);break;
+        case 5:result=max(d,s);break;
+        case 6:result=abs(d-s);break;
+        case 7:result=dodge(d,s);break;
+        case 8:result=burn(d,s);break;
+        case 13:result=max(0,d+s-1);break;
+        case 14:result=min(1,d+s);break;
+        case 15: {
+            precise float g=d<=0.25 ? ((16*d-12)*d+4)*d : sqrt(d);
+            result=s<=0.5 ? d-(1-2*s)*d*(1-d) : d+(2*s-1)*(g-d);
+            break;
+        }
+        case 16:result=s<=0.5 ? 2*d*s : 1-2*(1-d)*(1-s);break;
+        case 17:result=vivid(d,s);break;
+        case 18:result=clamp(d+2*s-1,0,1);break;
+        case 19:result=s<=0.5 ? min(d,2*s) : max(d,2*s-1);break;
+        // Hard Mix is classified from raw premultiplied inputs in main().
+        case 21:result=d+s-2*d*s;break;
+        case 22:result=max(0,d-s);break;
+        case 23:result=s==0 ? 1 : min(1,d/s);break;
+    }
+    return result;
+}
+vec3 artistic(vec3 d,vec3 s,uint mode) {
+    vec3 result;
+    switch(mode) {
+        case 9:result=withLuminosity(withSaturation(s,saturation(d)),luminosity(d));break;
+        case 10:result=withLuminosity(withSaturation(d,saturation(s)),luminosity(d));break;
+        case 11:result=withLuminosity(s,luminosity(d));break;
+        case 12:result=withLuminosity(d,luminosity(s));break;
+        default:result=vec3(component(d.r,s.r,mode),component(d.g,s.g,mode),component(d.b,s.b,mode));break;
+    }
+    return clamp(result,0,1);
+}
+void main() {
+    uint i=gl_GlobalInvocationID.x;
+    if(i>=parameters.count) return;
+    vec4 s=sourcePixels[i],b=backdropPixels[i];
+    if(s.a==0) {outputPixels[i]=b.a==0 ? vec4(0) : b;return;}
+    if(b.a==0) {outputPixels[i]=s;return;}
+    precise vec4 outputValue;
+    if(parameters.mode==0) outputValue=s+b*(1-s.a);
+    else {
+        vec3 cs=vec3(code(s.r,s.a),code(s.g,s.a),code(s.b,s.a));
+        vec3 cb=vec3(code(b.r,b.a),code(b.g,b.a),code(b.b,b.a));
+        vec3 overlap=parameters.mode==20
+            ? vec3(hardMix(b.r,b.a,s.r,s.a),hardMix(b.g,b.a,s.g,s.a),hardMix(b.b,b.a,s.b,s.a))
+            : artistic(cb,cs,parameters.mode);
+        vec3 linearOverlap=vec3(decode(overlap.r),decode(overlap.g),decode(overlap.b));
+        outputValue.rgb=s.rgb*(1-b.a)+(s.a*b.a)*linearOverlap+b.rgb*(1-s.a);
+        outputValue.a=s.a+b.a*(1-s.a);
+    }
+    outputPixels[i]=outputValue;
+}

@@ -1,0 +1,121 @@
+#version 450
+#extension GL_ARB_gpu_shader_fp64 : require
+layout(local_size_x=64) in;
+layout(set=0,binding=0,std430) readonly buffer Pool { uint words[]; } pool;
+// Dense source-grid metadata, not pixels: slot, packed-tile origin x/y, unused.
+// -1 means asset default, -2 means nonresident (must never be sampled).
+layout(set=0,binding=1,std430) readonly buffer Tiles { ivec4 entries[]; } tiles;
+layout(set=0,binding=2,std430) readonly buffer Parameters {
+    double a; double b; double c; double d; double tx; double ty;
+    dvec2 origin; dvec2 step;
+    ivec4 extent; ivec4 grid;
+    vec4 defaultPixel;
+    uint width; uint height; uint sampling; float opacity;
+    uvec2 outputOffset;
+    dvec2 footprint;
+    uint fp32Source;
+    dvec2 inputOrigin;
+    double inputScale;
+    dvec2 tapOrigin;
+} p;
+layout(set=0,binding=3,std430) writeonly buffer Output { vec4 pixels[]; } outputImage;
+vec4 invalidSample() { return vec4(uintBitsToFloat(0x7fc00000u)); }
+vec4 tap(dvec2 point) {
+    point+=p.tapOrigin;
+    // Compare before converting to int. Host restricts source extent to a safe
+    // signed-32-bit grid; arbitrary out-of-extent mapped coordinates are zero.
+    if(point.x<double(p.extent.x) || point.y<double(p.extent.y) ||
+       point.x>=double(p.extent.x)+double(p.extent.z) || point.y>=double(p.extent.y)+double(p.extent.w)) return vec4(0);
+    ivec2 position=ivec2(point);
+    ivec2 cell=ivec2(floor(point/256.0))-p.grid.xy;
+    if(any(lessThan(cell,ivec2(0))) || any(greaterThanEqual(cell,p.grid.zw))) return invalidSample();
+    int index=cell.y*p.grid.z+cell.x;
+    if(index>=tiles.entries.length()) return invalidSample();
+    ivec4 entry=tiles.entries[index];
+    if(entry.x==-1) return p.defaultPixel;
+    if(entry.x<0) return invalidSample();
+    uint wordsPerPixel=p.fp32Source!=0u ? 4u : 2u;
+    if(uint(entry.x)>=uint(pool.words.length())/(65536u*wordsPerPixel)) return invalidSample();
+    ivec2 local=position-entry.yz;
+    if(any(lessThan(local,ivec2(0))) || any(greaterThanEqual(local,ivec2(256)))) return invalidSample();
+    uint address=(uint(entry.x)*65536u+uint(local.y)*256u+uint(local.x))*wordsPerPixel;
+    if(address+wordsPerPixel>pool.words.length()) return invalidSample();
+    if(p.fp32Source!=0u) return uintBitsToFloat(uvec4(pool.words[address],pool.words[address+1],pool.words[address+2],pool.words[address+3]));
+    uvec2 bits=uvec2(pool.words[address],pool.words[address+1]);
+    return vec4(unpackHalf2x16(bits.x),unpackHalf2x16(bits.y));
+}
+vec4 interpolate(vec4 a,vec4 b,float weight) {
+    precise vec4 result=a*(1.0-weight)+b*weight;
+    return result;
+}
+float sinc(float angle) {
+    // Native shader sin has an absolute error bound, which is unsuitable for
+    // sin(x)/x near zero. Evaluate the removable singularity stably instead.
+    if(abs(angle)<0.125) {
+        precise float square=angle*angle;
+        precise float result=1.0+square*(-1.0/6.0+square*(1.0/120.0-square/5040.0));
+        return result;
+    }
+    return sin(angle)/angle;
+}
+float lanczos(float distance) {
+    float t=abs(distance);
+    if(t>=3.0 || t==1.0 || t==2.0) return 0.0;
+    if(t==0.0) return 1.0;
+    precise float angle=3.14159265358979323846*t;
+    precise float result=sinc(angle)*sinc(angle/3.0);
+    return result;
+}
+float filterWeight(int index,double center,double footprint) {
+    precise double position=(double(index)+0.5-center)/footprint;
+    return lanczos(float(position))/float(footprint);
+}
+vec4 filtered(dvec2 center) {
+    // Reject remote coordinates before int conversion, but retain the entire
+    // support near an edge. Exterior weights still enter normalization.
+    dvec2 support=3.0*p.footprint;
+    dvec2 extentOrigin=dvec2(p.extent.xy)-p.tapOrigin;
+    if(any(lessThan(center,extentOrigin-support-1.0)) ||
+       any(greaterThan(center,extentOrigin+dvec2(p.extent.zw)+support+1.0))) return vec4(0);
+    ivec2 first=ivec2(ceil(center-support-0.5));
+    ivec2 last=ivec2(floor(center+support-0.5));
+    precise float sumX=0.0,sumY=0.0;
+    for(int x=first.x;x<=last.x;++x) sumX+=filterWeight(x,center.x,p.footprint.x);
+    for(int y=first.y;y<=last.y;++y) sumY+=filterWeight(y,center.y,p.footprint.y);
+    precise vec4 result=vec4(0);
+    for(int y=first.y;y<=last.y;++y) {
+        precise float wy=filterWeight(y,center.y,p.footprint.y)/sumY;
+        precise vec4 row=vec4(0);
+        if(wy!=0.0) for(int x=first.x;x<=last.x;++x) {
+            precise float wx=filterWeight(x,center.x,p.footprint.x)/sumX;
+            if(wx!=0.0) row+=tap(dvec2(x,y))*wx;
+        }
+        result+=row*wy;
+    }
+    if(any(isnan(result)) || any(isinf(result))) return invalidSample();
+    if(result.a<=0.0) return vec4(0);
+    precise float alpha=min(result.a,1.0),ratio=alpha/result.a;
+    precise vec3 rgb=result.rgb*ratio;
+    // Canonical zeros, without clipping extended straight color to alpha.
+    return vec4(rgb.x==0.0 ? 0.0 : rgb.x,rgb.y==0.0 ? 0.0 : rgb.y,rgb.z==0.0 ? 0.0 : rgb.z,alpha);
+}
+void main() {
+    uint index=gl_GlobalInvocationID.x;
+    if(index>=p.width*p.height || index>=outputImage.pixels.length()) return;
+    precise dvec2 document=p.origin+dvec2(uvec2(index%p.width,index/p.width)+p.outputOffset)*p.step;
+    precise double x=p.a*document.x+p.c*document.y+p.tx;
+    precise double y=p.b*document.x+p.d*document.y+p.ty;
+    if(isnan(x) || isnan(y) || isinf(x) || isinf(y)) {outputImage.pixels[index]=invalidSample();return;}
+    precise dvec2 position=(dvec2(x,y)-p.inputOrigin)/p.inputScale;
+    vec4 value;
+    if(p.sampling==0) value=tap(floor(position));
+    else if(p.sampling==2) value=filtered(position);
+    else {
+        precise dvec2 centered=position-0.5;
+        dvec2 base=floor(centered);
+        vec2 weight=vec2(centered-base);
+        value=interpolate(interpolate(tap(base),tap(base+dvec2(1,0)),weight.x),
+                          interpolate(tap(base+dvec2(0,1)),tap(base+dvec2(1,1)),weight.x),weight.y);
+    }
+    outputImage.pixels[index]=value*p.opacity;
+}

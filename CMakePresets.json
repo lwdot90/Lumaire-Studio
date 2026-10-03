@@ -1,0 +1,28 @@
+{
+  "version":6,
+  "cmakeMinimumRequired":{"major":3,"minor":28,"patch":0},
+  "configurePresets":[
+    {"name":"base","hidden":true,"generator":"Ninja","binaryDir":"${sourceDir}/build/${presetName}","cacheVariables":{"CMAKE_EXPORT_COMPILE_COMMANDS":"ON","BUILD_TESTING":"ON"}},
+    {"name":"debug","inherits":"base","cacheVariables":{"CMAKE_BUILD_TYPE":"Debug","COMPOSITOR_VALIDATION":"ON"}},
+    {"name":"release","inherits":"base","cacheVariables":{"CMAKE_BUILD_TYPE":"RelWithDebInfo","COMPOSITOR_VALIDATION":"OFF"}},
+    {"name":"profile","inherits":"release","cacheVariables":{"COMPOSITOR_PROFILE":"ON"}},
+    {"name":"asan","inherits":"debug","cacheVariables":{"COMPOSITOR_SANITIZER":"address"}},
+    {"name":"tsan","inherits":"debug","cacheVariables":{"COMPOSITOR_SANITIZER":"thread"}},
+    {"name":"clang","inherits":"debug","cacheVariables":{"CMAKE_CXX_COMPILER":"clang++"}},
+    {"name":"core-only","inherits":"debug","cacheVariables":{"COMPOSITOR_BUILD_APP":"OFF"}}
+  ],
+  "buildPresets":[
+    {"name":"debug","configurePreset":"debug","jobs":1},{"name":"release","configurePreset":"release","jobs":1},
+    {"name":"profile","configurePreset":"profile","jobs":1},{"name":"asan","configurePreset":"asan","jobs":1},
+    {"name":"tsan","configurePreset":"tsan","jobs":1},{"name":"clang","configurePreset":"clang","jobs":1},
+    {"name":"core-only","configurePreset":"core-only","jobs":1}
+  ],
+  "testPresets":[
+    {"name":"debug","configurePreset":"debug","output":{"outputOnFailure":true}},
+    {"name":"release","configurePreset":"release","output":{"outputOnFailure":true}},
+    {"name":"asan","configurePreset":"asan","output":{"outputOnFailure":true}},
+    {"name":"tsan","configurePreset":"tsan","output":{"outputOnFailure":true}},
+    {"name":"clang","configurePreset":"clang","output":{"outputOnFailure":true}},
+    {"name":"core-only","configurePreset":"core-only","output":{"outputOnFailure":true}}
+  ]
+}

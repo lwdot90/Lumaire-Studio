@@ -1,0 +1,1382 @@
+{
+  "source_git_commit": "420db46314d9878fbd5d5fc7edbbfc41fd078766",
+  "source_git_dirty": false,
+  "export_policy": "current tracked Linux worktree bytes; no git history, builds, fixtures, historical evidence or symlinks",
+  "files": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "source_path": "linux/repository/.github/workflows/ci.yml",
+      "source_sha256": "ca8196fa2ea3caadf5977f3dfb5e957a3e8fa5ea883e04bd9e20777ed83b51c5",
+      "sha256": "ca8196fa2ea3caadf5977f3dfb5e957a3e8fa5ea883e04bd9e20777ed83b51c5",
+      "normalizations": []
+    },
+    {
+      "path": ".gitignore",
+      "source_path": "linux/repository/.gitignore",
+      "source_sha256": "ea2bd3a63be87630054eceecc61b10452ce49db01eec9fe461635df85194d670",
+      "sha256": "ea2bd3a63be87630054eceecc61b10452ce49db01eec9fe461635df85194d670",
+      "normalizations": []
+    },
+    {
+      "path": "BUILDING.md",
+      "source_path": "linux/repository/BUILDING.md",
+      "source_sha256": "868b41278be929a7edba5ea77e09a87ced0f470faec657949461a5b50c4104d0",
+      "sha256": "868b41278be929a7edba5ea77e09a87ced0f470faec657949461a5b50c4104d0",
+      "normalizations": []
+    },
+    {
+      "path": "CMakeLists.txt",
+      "source_path": "linux/CMakeLists.txt",
+      "source_sha256": "f1254c74f765b2d7c283ec28ddb7f402187e2ca852b7dfa8e645a57f2b28de1b",
+      "sha256": "f1254c74f765b2d7c283ec28ddb7f402187e2ca852b7dfa8e645a57f2b28de1b",
+      "normalizations": []
+    },
+    {
+      "path": "CMakePresets.json",
+      "source_path": "linux/CMakePresets.json",
+      "source_sha256": "5ed3151665671207512987d35fb27fd43d63a5a2b6168131ec145d3df8cdf291",
+      "sha256": "5ed3151665671207512987d35fb27fd43d63a5a2b6168131ec145d3df8cdf291",
+      "normalizations": []
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "source_path": "linux/repository/CONTRIBUTING.md",
+      "source_sha256": "dfb0a8f10a03c1bbc48eff509656914af3c42be3e22fac789d378a46d8eac73d",
+      "sha256": "dfb0a8f10a03c1bbc48eff509656914af3c42be3e22fac789d378a46d8eac73d",
+      "normalizations": []
+    },
+    {
+      "path": "LICENSE",
+      "source_path": "LICENSE",
+      "source_sha256": "dd4ed477fc9654db5aca736b822c1a61ae75c325b38742905d010d070b2f9a19",
+      "sha256": "dd4ed477fc9654db5aca736b822c1a61ae75c325b38742905d010d070b2f9a19",
+      "normalizations": []
+    },
+    {
+      "path": "README.md",
+      "source_path": "linux/repository/README.md",
+      "source_sha256": "a0d3b35331fb91448e5b748ae7b80620b488575c88ed8d13d5ad33a32a0c50b6",
+      "sha256": "a0d3b35331fb91448e5b748ae7b80620b488575c88ed8d13d5ad33a32a0c50b6",
+      "normalizations": []
+    },
+    {
+      "path": "ROADMAP.md",
+      "source_path": "linux/repository/ROADMAP.md",
+      "source_sha256": "04176878500efd4f57e0ab49f1ed59575fe8018793aa5444d6a5410fba0e7148",
+      "sha256": "04176878500efd4f57e0ab49f1ed59575fe8018793aa5444d6a5410fba0e7148",
+      "normalizations": []
+    },
+    {
+      "path": "THIRD_PARTY.md",
+      "source_path": "linux/repository/THIRD_PARTY.md",
+      "source_sha256": "9839f7856040fd604dcbe9c311cc575fa24d0493ed1686164f97132750b6851a",
+      "sha256": "9839f7856040fd604dcbe9c311cc575fa24d0493ed1686164f97132750b6851a",
+      "normalizations": []
+    },
+    {
+      "path": "app/application_icon.h",
+      "source_path": "linux/app/application_icon.h",
+      "source_sha256": "a6831a5cf488721fafb48df34f62171762147bdc34dda1112470def04880e12a",
+      "sha256": "a6831a5cf488721fafb48df34f62171762147bdc34dda1112470def04880e12a",
+      "normalizations": []
+    },
+    {
+      "path": "app/color_panel.cpp",
+      "source_path": "linux/app/color_panel.cpp",
+      "source_sha256": "c58173f0de56088616c0420ae90e0929d118a2d55494368f9c30e218a8a1542c",
+      "sha256": "c58173f0de56088616c0420ae90e0929d118a2d55494368f9c30e218a8a1542c",
+      "normalizations": []
+    },
+    {
+      "path": "app/color_panel.h",
+      "source_path": "linux/app/color_panel.h",
+      "source_sha256": "e770279d809d16ea43dc5c5d8a838f9c8448048de9fb144e482c05e197a0b008",
+      "sha256": "e770279d809d16ea43dc5c5d8a838f9c8448048de9fb144e482c05e197a0b008",
+      "normalizations": []
+    },
+    {
+      "path": "app/development_demo.cpp",
+      "source_path": "linux/app/development_demo.cpp",
+      "source_sha256": "50579d9b2f7c80071cc29803c0d0536469e125d6efa78e2d1d60fe7abf66017c",
+      "sha256": "50579d9b2f7c80071cc29803c0d0536469e125d6efa78e2d1d60fe7abf66017c",
+      "normalizations": []
+    },
+    {
+      "path": "app/development_demo.h",
+      "source_path": "linux/app/development_demo.h",
+      "source_sha256": "96860e28bd5c789ff2c9206918b9ca7cb6a45eae1644469bc78bbc82111537cc",
+      "sha256": "96860e28bd5c789ff2c9206918b9ca7cb6a45eae1644469bc78bbc82111537cc",
+      "normalizations": []
+    },
+    {
+      "path": "app/editing_menus.cpp",
+      "source_path": "linux/app/editing_menus.cpp",
+      "source_sha256": "ff724fc53994342b9ee3387d94299bf5623f8eecb71ae89d7f7f1a23a508c52e",
+      "sha256": "ff724fc53994342b9ee3387d94299bf5623f8eecb71ae89d7f7f1a23a508c52e",
+      "normalizations": []
+    },
+    {
+      "path": "app/editing_menus.h",
+      "source_path": "linux/app/editing_menus.h",
+      "source_sha256": "960080e4799be519686fc51e0ef58032451a55e36f0b18a7d21bb97a6847ee05",
+      "sha256": "960080e4799be519686fc51e0ef58032451a55e36f0b18a7d21bb97a6847ee05",
+      "normalizations": []
+    },
+    {
+      "path": "app/editor_theme.h",
+      "source_path": "linux/app/editor_theme.h",
+      "source_sha256": "394e5dfb050b643ae19494556b3b47e42ce05dcf86f435563aabb92f05c16f41",
+      "sha256": "394e5dfb050b643ae19494556b3b47e42ce05dcf86f435563aabb92f05c16f41",
+      "normalizations": []
+    },
+    {
+      "path": "app/layer_tree.h",
+      "source_path": "linux/app/layer_tree.h",
+      "source_sha256": "bae92dbd0ebec97624d427ae0739241c94b978b01180f67821cd028e78dfa186",
+      "sha256": "bae92dbd0ebec97624d427ae0739241c94b978b01180f67821cd028e78dfa186",
+      "normalizations": []
+    },
+    {
+      "path": "app/layer_visibility_delegate.h",
+      "source_path": "linux/app/layer_visibility_delegate.h",
+      "source_sha256": "272a950f9634e5d8b9b51ecfb745b74418fa2d41b0f8a706733ed8fb25a4f7ed",
+      "sha256": "272a950f9634e5d8b9b51ecfb745b74418fa2d41b0f8a706733ed8fb25a4f7ed",
+      "normalizations": []
+    },
+    {
+      "path": "app/main.cpp",
+      "source_path": "linux/app/main.cpp",
+      "source_sha256": "e60a4d3c3a0b5e4bd7781087a59dd44361ec5740447cb514e401767fbcd5eecf",
+      "sha256": "e60a4d3c3a0b5e4bd7781087a59dd44361ec5740447cb514e401767fbcd5eecf",
+      "normalizations": []
+    },
+    {
+      "path": "app/panel_icons.h",
+      "source_path": "linux/app/panel_icons.h",
+      "source_sha256": "d61689a1834a17cff2ab9d427ba567012e583d90e0a682f44124dd4243413852",
+      "sha256": "d61689a1834a17cff2ab9d427ba567012e583d90e0a682f44124dd4243413852",
+      "normalizations": []
+    },
+    {
+      "path": "app/tool_controller.cpp",
+      "source_path": "linux/app/tool_controller.cpp",
+      "source_sha256": "fcf5fdd78b4fac4c6db2d9057448069e8a93aa6857f3377b7b7a06abe9079b39",
+      "sha256": "fcf5fdd78b4fac4c6db2d9057448069e8a93aa6857f3377b7b7a06abe9079b39",
+      "normalizations": []
+    },
+    {
+      "path": "app/tool_controller.h",
+      "source_path": "linux/app/tool_controller.h",
+      "source_sha256": "b0d1e0d76e9ae3e4637f660927d50461715083d042bf68547e147b710beec276",
+      "sha256": "b0d1e0d76e9ae3e4637f660927d50461715083d042bf68547e147b710beec276",
+      "normalizations": []
+    },
+    {
+      "path": "app/window.cpp",
+      "source_path": "linux/app/window.cpp",
+      "source_sha256": "d415bbab64d9d88d6f3bab15fd86cd58f28a53120fecf2fa2e727070555c770e",
+      "sha256": "d415bbab64d9d88d6f3bab15fd86cd58f28a53120fecf2fa2e727070555c770e",
+      "normalizations": []
+    },
+    {
+      "path": "app/window.h",
+      "source_path": "linux/app/window.h",
+      "source_sha256": "48cf56e012e1df04633f888abc9ada1f87e2f92b58609545d5c13ba11364eab8",
+      "sha256": "48cf56e012e1df04633f888abc9ada1f87e2f92b58609545d5c13ba11364eab8",
+      "normalizations": []
+    },
+    {
+      "path": "assets/lumaire-studio-mime.xml",
+      "source_path": "linux/assets/lumaire-studio-mime.xml",
+      "source_sha256": "c516db050704d98640e2711ea1050b74b0622f9e9e8211ad115365108ef47895",
+      "sha256": "c516db050704d98640e2711ea1050b74b0622f9e9e8211ad115365108ef47895",
+      "normalizations": []
+    },
+    {
+      "path": "assets/lumaire-studio.desktop",
+      "source_path": "linux/assets/lumaire-studio.desktop",
+      "source_sha256": "12b81b66263e60620d2a8cc79722467a7351cdf387a23cb1b158a58b3cb2a359",
+      "sha256": "12b81b66263e60620d2a8cc79722467a7351cdf387a23cb1b158a58b3cb2a359",
+      "normalizations": []
+    },
+    {
+      "path": "assets/lumaire-studio.svg",
+      "source_path": "linux/assets/lumaire-studio.svg",
+      "source_sha256": "19ecddfac769700c6b349684383a1fc58a6a30e5649c29167cdf339298834834",
+      "sha256": "19ecddfac769700c6b349684383a1fc58a6a30e5649c29167cdf339298834834",
+      "normalizations": []
+    },
+    {
+      "path": "cmake/EmbedSpirv.cmake",
+      "source_path": "linux/cmake/EmbedSpirv.cmake",
+      "source_sha256": "011053088ac340fc4aeac54d9c89be774215f87b44f5244c858be1cb0c544d5c",
+      "sha256": "011053088ac340fc4aeac54d9c89be774215f87b44f5244c858be1cb0c544d5c",
+      "normalizations": []
+    },
+    {
+      "path": "core/adjustments.cpp",
+      "source_path": "linux/core/adjustments.cpp",
+      "source_sha256": "2c687af3dfb372cfb5a271235a13ec2f44f54f1b9c66053f261355e3cfd10aaa",
+      "sha256": "2c687af3dfb372cfb5a271235a13ec2f44f54f1b9c66053f261355e3cfd10aaa",
+      "normalizations": []
+    },
+    {
+      "path": "core/affine.h",
+      "source_path": "linux/core/affine.h",
+      "source_sha256": "dbfac59a2dbe151f1375d18735fdd4a1b9ba431c093af03435dca6c1862ab4dd",
+      "sha256": "dbfac59a2dbe151f1375d18735fdd4a1b9ba431c093af03435dca6c1862ab4dd",
+      "normalizations": []
+    },
+    {
+      "path": "core/blend.cpp",
+      "source_path": "linux/core/blend.cpp",
+      "source_sha256": "3350f665dee4322a28ecae48b80f9266a8ddd6404a363ff999808ce9c6cb76f0",
+      "sha256": "3350f665dee4322a28ecae48b80f9266a8ddd6404a363ff999808ce9c6cb76f0",
+      "normalizations": []
+    },
+    {
+      "path": "core/blend.h",
+      "source_path": "linux/core/blend.h",
+      "source_sha256": "c0a042a558f80320d3440accb454ff9da108aa15d3060752dd5d56972991913c",
+      "sha256": "c0a042a558f80320d3440accb454ff9da108aa15d3060752dd5d56972991913c",
+      "normalizations": []
+    },
+    {
+      "path": "core/brush.cpp",
+      "source_path": "linux/core/brush.cpp",
+      "source_sha256": "ea3335b5eb62aeb4573dde24bd5f88762e096520c8f31eeb492f6377d9e5df1f",
+      "sha256": "ea3335b5eb62aeb4573dde24bd5f88762e096520c8f31eeb492f6377d9e5df1f",
+      "normalizations": []
+    },
+    {
+      "path": "core/checkerboard.h",
+      "source_path": "linux/core/checkerboard.h",
+      "source_sha256": "56ba50816fddb69e98e60a46374e7b942a7ff8332fe5ee146e59b3eaeee26ad7",
+      "sha256": "56ba50816fddb69e98e60a46374e7b942a7ff8332fe5ee146e59b3eaeee26ad7",
+      "normalizations": []
+    },
+    {
+      "path": "core/document.cpp",
+      "source_path": "linux/core/document.cpp",
+      "source_sha256": "1cc6a3cb4350b5a1085ffcbc7e0637f6522dd21cf2b9c1b389445f1ad10519f4",
+      "sha256": "1cc6a3cb4350b5a1085ffcbc7e0637f6522dd21cf2b9c1b389445f1ad10519f4",
+      "normalizations": []
+    },
+    {
+      "path": "core/document.h",
+      "source_path": "linux/core/document.h",
+      "source_sha256": "ecc2eafbfaca45f44d5597d3ced86fe2f8e7ebab3d48df9c72cb6bd31b10db99",
+      "sha256": "ecc2eafbfaca45f44d5597d3ced86fe2f8e7ebab3d48df9c72cb6bd31b10db99",
+      "normalizations": []
+    },
+    {
+      "path": "core/editing_types.h",
+      "source_path": "linux/core/editing_types.h",
+      "source_sha256": "a01f40b419ba3a963c8ea832b6ad9f1a0d86956a1701e2b14504980a9a379a9e",
+      "sha256": "a01f40b419ba3a963c8ea832b6ad9f1a0d86956a1701e2b14504980a9a379a9e",
+      "normalizations": []
+    },
+    {
+      "path": "core/editor_commands.h",
+      "source_path": "linux/core/editor_commands.h",
+      "source_sha256": "d1ba26878c9b600246ef7ccb9358c8f8d3ff865f7081df01fb7a17930fe149a1",
+      "sha256": "d1ba26878c9b600246ef7ccb9358c8f8d3ff865f7081df01fb7a17930fe149a1",
+      "normalizations": []
+    },
+    {
+      "path": "core/geometry_edits.cpp",
+      "source_path": "linux/core/geometry_edits.cpp",
+      "source_sha256": "51f157f43383b69fa75c0aede99dcabc252aac697882b6d99d4bb07871cdb505",
+      "sha256": "51f157f43383b69fa75c0aede99dcabc252aac697882b6d99d4bb07871cdb505",
+      "normalizations": []
+    },
+    {
+      "path": "core/hard_mix_thresholds.h",
+      "source_path": "linux/core/hard_mix_thresholds.h",
+      "source_sha256": "9e9a614dbb0880ec7105bb01e2c6bf5d3654e9779ea82d4b4cf5ce11d86ca96b",
+      "sha256": "9e9a614dbb0880ec7105bb01e2c6bf5d3654e9779ea82d4b4cf5ce11d86ca96b",
+      "normalizations": []
+    },
+    {
+      "path": "core/layer_stack.cpp",
+      "source_path": "linux/core/layer_stack.cpp",
+      "source_sha256": "b6a26c880529062534469b5ab42359664f3c8cdc8f7cab21a1a26d2b0ccad53a",
+      "sha256": "b6a26c880529062534469b5ab42359664f3c8cdc8f7cab21a1a26d2b0ccad53a",
+      "normalizations": []
+    },
+    {
+      "path": "core/layer_stack.h",
+      "source_path": "linux/core/layer_stack.h",
+      "source_sha256": "d1894aecf6f2d3ae6bfcdfc341b45c458bcd00f1ea30aee1f7f21ce7af972317",
+      "sha256": "d1894aecf6f2d3ae6bfcdfc341b45c458bcd00f1ea30aee1f7f21ce7af972317",
+      "normalizations": []
+    },
+    {
+      "path": "core/mask_edits.cpp",
+      "source_path": "linux/core/mask_edits.cpp",
+      "source_sha256": "529f5ece9780851761c58ef9fd7b21c008810eb1ac9b5645b5547d98ef30c23e",
+      "sha256": "529f5ece9780851761c58ef9fd7b21c008810eb1ac9b5645b5547d98ef30c23e",
+      "normalizations": []
+    },
+    {
+      "path": "core/memory_admission.cpp",
+      "source_path": "linux/core/memory_admission.cpp",
+      "source_sha256": "a8aa9a46939b99fa0cec6648602d27c5f789df946987a73ce0be0208af45cd6a",
+      "sha256": "a8aa9a46939b99fa0cec6648602d27c5f789df946987a73ce0be0208af45cd6a",
+      "normalizations": []
+    },
+    {
+      "path": "core/memory_admission.h",
+      "source_path": "linux/core/memory_admission.h",
+      "source_sha256": "0081a8705642774eca52c85aa20c6ca82a495595c092fe1795f4c34c293c64c0",
+      "sha256": "0081a8705642774eca52c85aa20c6ca82a495595c092fe1795f4c34c293c64c0",
+      "normalizations": []
+    },
+    {
+      "path": "core/pixels.cpp",
+      "source_path": "linux/core/pixels.cpp",
+      "source_sha256": "71a4251091832d768a004467ebc568084c505e502bc9d5d23d58d440609c0d4f",
+      "sha256": "71a4251091832d768a004467ebc568084c505e502bc9d5d23d58d440609c0d4f",
+      "normalizations": []
+    },
+    {
+      "path": "core/pixels.h",
+      "source_path": "linux/core/pixels.h",
+      "source_sha256": "7205e86bc6241d56a8c6508414d1fe03a33e7f6d40adffa646f526c6bd23f26d",
+      "sha256": "7205e86bc6241d56a8c6508414d1fe03a33e7f6d40adffa646f526c6bd23f26d",
+      "normalizations": []
+    },
+    {
+      "path": "core/raster.h",
+      "source_path": "linux/core/raster.h",
+      "source_sha256": "0b7c85c4413b86a29994414d5be887cd70590244642dbcccc99588c1762832d0",
+      "sha256": "0b7c85c4413b86a29994414d5be887cd70590244642dbcccc99588c1762832d0",
+      "normalizations": []
+    },
+    {
+      "path": "core/render_source.cpp",
+      "source_path": "linux/core/render_source.cpp",
+      "source_sha256": "c48c4861ac5a857706f7489de5135e5534442c624c21d77b008ec77658ccc39a",
+      "sha256": "c48c4861ac5a857706f7489de5135e5534442c624c21d77b008ec77658ccc39a",
+      "normalizations": []
+    },
+    {
+      "path": "core/render_source.h",
+      "source_path": "linux/core/render_source.h",
+      "source_sha256": "818653b27bd5187fe387ed6581a8d87187bdfc4eafb705ae6bb8c44d06215f73",
+      "sha256": "818653b27bd5187fe387ed6581a8d87187bdfc4eafb705ae6bb8c44d06215f73",
+      "normalizations": []
+    },
+    {
+      "path": "core/resampling.cpp",
+      "source_path": "linux/core/resampling.cpp",
+      "source_sha256": "def5498f6afb37e18bd86d83a15fd60a9a0646278d68b828c619ea0b1d158a8f",
+      "sha256": "def5498f6afb37e18bd86d83a15fd60a9a0646278d68b828c619ea0b1d158a8f",
+      "normalizations": []
+    },
+    {
+      "path": "core/resampling.h",
+      "source_path": "linux/core/resampling.h",
+      "source_sha256": "83a03180536b0024a4b0d061bac09c15d166d4b34cbc328d3e7426b05aac3496",
+      "sha256": "83a03180536b0024a4b0d061bac09c15d166d4b34cbc328d3e7426b05aac3496",
+      "normalizations": []
+    },
+    {
+      "path": "core/resources.cpp",
+      "source_path": "linux/core/resources.cpp",
+      "source_sha256": "0630afdbebb82dfc77c5a992afb5bf66d714b8cbc670ce98ab89679f3568da4b",
+      "sha256": "0630afdbebb82dfc77c5a992afb5bf66d714b8cbc670ce98ab89679f3568da4b",
+      "normalizations": []
+    },
+    {
+      "path": "core/resources.h",
+      "source_path": "linux/core/resources.h",
+      "source_sha256": "b2969f32a242f65adad97ea95a3b3dab305849d4aef1dad3b24c68cb216dac73",
+      "sha256": "b2969f32a242f65adad97ea95a3b3dab305849d4aef1dad3b24c68cb216dac73",
+      "normalizations": []
+    },
+    {
+      "path": "core/sampling.h",
+      "source_path": "linux/core/sampling.h",
+      "source_sha256": "3706811704a90880f36ecf51208add500ddfacd0e2219c1da2fb18bc0b771c7f",
+      "sha256": "3706811704a90880f36ecf51208add500ddfacd0e2219c1da2fb18bc0b771c7f",
+      "normalizations": []
+    },
+    {
+      "path": "core/selection_coverage.h",
+      "source_path": "linux/core/selection_coverage.h",
+      "source_sha256": "f026c6e4e5f1f7ed8f1f4abef6b28282905c8bc3db1084237791bc05cf7b6c48",
+      "sha256": "f026c6e4e5f1f7ed8f1f4abef6b28282905c8bc3db1084237791bc05cf7b6c48",
+      "normalizations": []
+    },
+    {
+      "path": "core/selection_edits.cpp",
+      "source_path": "linux/core/selection_edits.cpp",
+      "source_sha256": "e6da7c8a3386f3fbd5e4d3e39e20cbbfe4c36942a3a969d3a7de5d401e82f034",
+      "sha256": "e6da7c8a3386f3fbd5e4d3e39e20cbbfe4c36942a3a969d3a7de5d401e82f034",
+      "normalizations": []
+    },
+    {
+      "path": "core/spill_coordinator.cpp",
+      "source_path": "linux/core/spill_coordinator.cpp",
+      "source_sha256": "e31d3ed7f0384616d174f5436f7eed6cb90ae85e2d2e5cdbcdc9b28826d64f83",
+      "sha256": "e31d3ed7f0384616d174f5436f7eed6cb90ae85e2d2e5cdbcdc9b28826d64f83",
+      "normalizations": []
+    },
+    {
+      "path": "core/spill_coordinator.h",
+      "source_path": "linux/core/spill_coordinator.h",
+      "source_sha256": "035e05f46d4e8f4bda085e5002024abb57024c2195320e9e7d89a5c0ad3d4b8c",
+      "sha256": "035e05f46d4e8f4bda085e5002024abb57024c2195320e9e7d89a5c0ad3d4b8c",
+      "normalizations": []
+    },
+    {
+      "path": "core/spill_tile_payload.cpp",
+      "source_path": "linux/core/spill_tile_payload.cpp",
+      "source_sha256": "54bbb64a64e49d4617bbc7939d1bbd1ab06ef0bc15001ea87e8ff1afe25fbf8f",
+      "sha256": "54bbb64a64e49d4617bbc7939d1bbd1ab06ef0bc15001ea87e8ff1afe25fbf8f",
+      "normalizations": []
+    },
+    {
+      "path": "core/spill_tile_payload.h",
+      "source_path": "linux/core/spill_tile_payload.h",
+      "source_sha256": "17f0eeb53a3791ee73a4c1607b829d00b056818279553f3c6806291bc8a82e7d",
+      "sha256": "17f0eeb53a3791ee73a4c1607b829d00b056818279553f3c6806291bc8a82e7d",
+      "normalizations": []
+    },
+    {
+      "path": "core/tiles.cpp",
+      "source_path": "linux/core/tiles.cpp",
+      "source_sha256": "76e7370d2eed8615b2595319692aaac612745a4c3495b4f998022ee0ed756eb9",
+      "sha256": "76e7370d2eed8615b2595319692aaac612745a4c3495b4f998022ee0ed756eb9",
+      "normalizations": []
+    },
+    {
+      "path": "core/tiles.h",
+      "source_path": "linux/core/tiles.h",
+      "source_sha256": "241c120858ad57d2f8a65396d8265b35353e7af9feb543aab800c0339242ad59",
+      "sha256": "241c120858ad57d2f8a65396d8265b35353e7af9feb543aab800c0339242ad59",
+      "normalizations": []
+    },
+    {
+      "path": "core/viewport.h",
+      "source_path": "linux/core/viewport.h",
+      "source_sha256": "9b86ad07d07b64f4a43511cbf0cc0bfe7b49ab999fd507143f5a19f148fc2958",
+      "sha256": "9b86ad07d07b64f4a43511cbf0cc0bfe7b49ab999fd507143f5a19f148fc2958",
+      "normalizations": []
+    },
+    {
+      "path": "dependencies.lock.json",
+      "source_path": "linux/dependencies.lock.json",
+      "source_sha256": "40c8d639d076efe051b69b25a3b0bd7e120a79f5d644d111029e028eb998b7fe",
+      "sha256": "40c8d639d076efe051b69b25a3b0bd7e120a79f5d644d111029e028eb998b7fe",
+      "normalizations": []
+    },
+    {
+      "path": "docs/adjustments-development-contract.md",
+      "source_path": "linux/docs/adjustments-development-contract.md",
+      "source_sha256": "8bfb42f472b1dfe6cae0ed6d7710de21d5e2c9621f96c91a708586b1c792f7b0",
+      "sha256": "248a39a0b7ffc90c8705ad8076544a392ea66b0600b26e0697ce0ccc8a0377af",
+      "normalizations": [
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/blend-24-contract.md",
+      "source_path": "linux/docs/blend-24-contract.md",
+      "source_sha256": "4ed878cb61b57e337992422d9191d357a2449a13ebbc6b819f5d2bd04e796e9c",
+      "sha256": "7a7a79fdd5f84fbe547d64d8670ce98b9ca0b27cf73a41a88e7feb09000057fa",
+      "normalizations": [
+        "normalized source-root commands and Linux path prefixes to standalone layout",
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/brush-development-contract.md",
+      "source_path": "linux/docs/brush-development-contract.md",
+      "source_sha256": "b5a81d790c5a4e0b0de6adb9c65b550c2c5a8c8ff3ac303da040cfbafddb1547",
+      "sha256": "a02a7822f70d4a4b43252ee35df8fa06d1eb916465cc3092955b2d03e0cbf71f",
+      "normalizations": [
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/folder-opacity-contract.md",
+      "source_path": "linux/docs/folder-opacity-contract.md",
+      "source_sha256": "2ce252e318502e97aa1e078f6ecf73273f7b96f65520fc730f10cb215aa93e0e",
+      "sha256": "158627d0531c632313379e827e2300691ae34dbf3e230917f47ffc31fd296b38",
+      "normalizations": [
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/geometry-development-contract.md",
+      "source_path": "linux/docs/geometry-development-contract.md",
+      "source_sha256": "213a1682d4d826e79eb095e7ff43b615d5797db299c921f78bfa9e868507a0fa",
+      "sha256": "4dc29e7ed7cf80d78723d430eb17c8fb38b1a9a1150b3c835931b43093bed101",
+      "normalizations": [
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/gpu-blend-24-contract.md",
+      "source_path": "linux/docs/gpu-blend-24-contract.md",
+      "source_sha256": "de3d465987d82128873a5cfff0827e5ddd3397d216c862a33207891f86578a85",
+      "sha256": "4d5771207c881a710eae5a9309a9fb84c17ebc7eca38363676cced6c2ca6f36d",
+      "normalizations": [
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/image-export-contract.md",
+      "source_path": "linux/docs/image-export-contract.md",
+      "source_sha256": "69a035692356271f6aa9ec2f17b354910f001f90cd12bbbf377398d2548351ff",
+      "sha256": "8d805da4fc479676fbb0e6f0b8adcdb7863f76a3d5867fffc3ab7363fcf5fcd7",
+      "normalizations": [
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/low-resource-compatibility.md",
+      "source_path": "linux/docs/low-resource-compatibility.md",
+      "source_sha256": "8ee4cce45cb93970f687653cca4a47113d0c97d21bb72af7d3cc0a112c6fefa4",
+      "sha256": "f9d4b957fd993ba1b3ba734d01606634f9a05464dd52b4dacb4a9abfee19e8f5",
+      "normalizations": [
+        "de-linked historical source-repository record: ../../docs/linux-development-plan.md",
+        "de-linked historical source-repository record: photoshop-value-acceptance.md",
+        "de-linked historical source-repository record: hardware-qualification.md",
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/pixel-semantics.md",
+      "source_path": "linux/docs/pixel-semantics.md",
+      "source_sha256": "f62099710c99521a9272e9c958e3b12e804db10145701891518ba9c9fe379c05",
+      "sha256": "8739aede64d5b320fb25495fa44d96029fde2f210c743b7a634f4af567f34db1",
+      "normalizations": [
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/project-format-v1.md",
+      "source_path": "linux/docs/project-format-v1.md",
+      "source_sha256": "de1931d0631ac72d99ace659484260acc28b4eb6bcfe81c4c7aba53d21290227",
+      "sha256": "e4ffb6527250f7d598e66f3d6635671a93b5d3cd30b720d263b01e6ede2aa517",
+      "normalizations": [
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/project-format-v1.sql",
+      "source_path": "linux/docs/project-format-v1.sql",
+      "source_sha256": "434f742856abfe8416518a20e9ce4c3e2cc6e94360ead9a878874b55eba78f65",
+      "sha256": "434f742856abfe8416518a20e9ce4c3e2cc6e94360ead9a878874b55eba78f65",
+      "normalizations": []
+    },
+    {
+      "path": "docs/project-format-v2.md",
+      "source_path": "linux/docs/project-format-v2.md",
+      "source_sha256": "798b9499d4afb6b2f67c9438bfb1cb77f55b22d41435964ed9ff5a62378c55a2",
+      "sha256": "e11e96eb9bb21f47c2d7eed3a7fb4def98c9fd022279aa28bf88cc31d5564b79",
+      "normalizations": [
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/project-format-v2.sql",
+      "source_path": "linux/docs/project-format-v2.sql",
+      "source_sha256": "7267cc282a37fa2600c1e58f5ad09efb56d1b0e07da99cb7a912c825d5439bf6",
+      "sha256": "7267cc282a37fa2600c1e58f5ad09efb56d1b0e07da99cb7a912c825d5439bf6",
+      "normalizations": []
+    },
+    {
+      "path": "docs/project-format-v3.md",
+      "source_path": "linux/docs/project-format-v3.md",
+      "source_sha256": "5a88ce85582c3916795d1442329bf75c79f10b4c54e8125ed26b9b1004e5b181",
+      "sha256": "609ad183c1c834d0ede3a93386a0f367c130dbd9e7995c9292e5428636c8889b",
+      "normalizations": [
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/project-format-v3.sql",
+      "source_path": "linux/docs/project-format-v3.sql",
+      "source_sha256": "059329ab72b2140a154ee37d7fe8e6684f5d12e02df22b4aafa491ec967a58d8",
+      "sha256": "059329ab72b2140a154ee37d7fe8e6684f5d12e02df22b4aafa491ec967a58d8",
+      "normalizations": []
+    },
+    {
+      "path": "docs/project-streaming-contract.md",
+      "source_path": "linux/docs/project-streaming-contract.md",
+      "source_sha256": "864acb815793646086723ae7deaeac8db503f589185840486c823c9db6a6ce47",
+      "sha256": "dcf193cd0a0bca2c7ab5e8d9512b7ca71f528bae226010a8cc888a329326c303",
+      "normalizations": [
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/render-source-contract.md",
+      "source_path": "linux/docs/render-source-contract.md",
+      "source_sha256": "f7a3b8ad9dedfa4470df818d99d7a20b660c007b0dabbf199eca471d72b80f74",
+      "sha256": "cb1e8a3b0cae72458bc5129fa753ac47fe9c9c68774098e1b592e3714e04b167",
+      "normalizations": [
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/resource-admission.md",
+      "source_path": "linux/docs/resource-admission.md",
+      "source_sha256": "ab31356ab05e24a9f0debf71b9eb4fec3438837bc7ea806e5f303a7e79fcbe8b",
+      "sha256": "9e308cbf4e911a672973abaad8bcaa57ec357e3f5d5a48bb0e140dcb4f56c77e",
+      "normalizations": [
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/selection-mask-development-contract.md",
+      "source_path": "linux/docs/selection-mask-development-contract.md",
+      "source_sha256": "d07ac365b3b995815b090396658a414dce4ba519a0d67403273eddab06f5b933",
+      "sha256": "51c3b274cf5c36fabd7d62e5d82515b359733bcfbdc5bd065b91bc34a67df30d",
+      "normalizations": [
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/selection-mask-persistence.md",
+      "source_path": "linux/docs/selection-mask-persistence.md",
+      "source_sha256": "eb4629bbc83d3ec7a403315fa6d5c7e6c92ef76c3cc764ddc4e53ea7437f8a82",
+      "sha256": "2079459d58f58e786b87d122c03ec8a66ccd3aa16b7c3bf9ba561005aa968db6",
+      "normalizations": [
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/spill-backing-contract.md",
+      "source_path": "linux/docs/spill-backing-contract.md",
+      "source_sha256": "d07ed4596bb1cd89e28c7e435592af59f795ea83d98494e700cd65cd9269126f",
+      "sha256": "dffae59bb908914438bd561e6451de479f90a41ad7b526654acdfceef5da4774",
+      "normalizations": [
+        "normalized source-root commands and Linux path prefixes to standalone layout",
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/spill-coordinator-contract.md",
+      "source_path": "linux/docs/spill-coordinator-contract.md",
+      "source_sha256": "71226c0d7617bf437995f20274188e0d5263a0ca278564939f88fdfee709a60d",
+      "sha256": "8eb4687b61cfd058b540c678bf5c2234fa1d0d9485a39d0aa26563cf6929840c",
+      "normalizations": [
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/spill-directory-contract.md",
+      "source_path": "linux/docs/spill-directory-contract.md",
+      "source_sha256": "846f63ee6afacfd13763cdfe6ed895e4947bc3cee390e38343c3f27708da0a37",
+      "sha256": "41e44b9f82bca07a20d397535a5f88ba0e14d67cf7c3ccf838e26b99587f37ce",
+      "normalizations": [
+        "de-linked historical source-repository record: m3-spill-integration-qualification.json",
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/spill-store-contract.md",
+      "source_path": "linux/docs/spill-store-contract.md",
+      "source_sha256": "b41f4f002e8c19d6d546492831cf20b64c7f1e9e8bc16a03e3c42777cb99ad6d",
+      "sha256": "8ec37a4fc8c4d76281ba0ff304aa14b9e1b51a01406f1741d9115b6c691486cf",
+      "normalizations": [
+        "normalized source-root commands and Linux path prefixes to standalone layout",
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/spill-tile-payload-contract.md",
+      "source_path": "linux/docs/spill-tile-payload-contract.md",
+      "source_sha256": "c35361f073dae574dbb23985feaf0bdc6cab0244700ef7374c30de00a41ef114",
+      "sha256": "4060d63063cc3d33f0b0925cafd1a414b669400bfc06954d0c7443bd186bdfa6",
+      "normalizations": [
+        "de-linked historical source-repository record: m3-spill-integration-qualification.json",
+        "normalized source-root commands and Linux path prefixes to standalone layout",
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "docs/today-editor-guide.md",
+      "source_path": "linux/docs/today-editor-guide.md",
+      "source_sha256": "3defcc3203d6c6d084eb98ff5092c4d189cfce79d5de36d0f66ef789d9cb1993",
+      "sha256": "59af5f2d942b117e9a2808adc714b0cff0bf62130a23357c55dbccf277664ae8",
+      "normalizations": [
+        "de-linked historical source-repository record: development-delivery.md",
+        "identified recorded validation as historical source-repository observations"
+      ]
+    },
+    {
+      "path": "io/image_export.cpp",
+      "source_path": "linux/io/image_export.cpp",
+      "source_sha256": "08d663fc13135376ea7ef828db7c2ab30d83ede54f9732af44e7c55e03d93d92",
+      "sha256": "08d663fc13135376ea7ef828db7c2ab30d83ede54f9732af44e7c55e03d93d92",
+      "normalizations": []
+    },
+    {
+      "path": "io/image_export.h",
+      "source_path": "linux/io/image_export.h",
+      "source_sha256": "faa6f0c01398a48d3bd616d6612f47c5cc9bef3736b89d03d5d61bc8b0895b30",
+      "sha256": "faa6f0c01398a48d3bd616d6612f47c5cc9bef3736b89d03d5d61bc8b0895b30",
+      "normalizations": []
+    },
+    {
+      "path": "io/image_import.cpp",
+      "source_path": "linux/io/image_import.cpp",
+      "source_sha256": "589510f2331b55ed5a0651580585768b1134483b79ef2fecef2e7a58eb0fefab",
+      "sha256": "589510f2331b55ed5a0651580585768b1134483b79ef2fecef2e7a58eb0fefab",
+      "normalizations": []
+    },
+    {
+      "path": "io/image_import.h",
+      "source_path": "linux/io/image_import.h",
+      "source_sha256": "91ae4f4c89e3fa724b380dd1ef3d7c6b28574616ebfff0e7faa67bff829cb5b3",
+      "sha256": "91ae4f4c89e3fa724b380dd1ef3d7c6b28574616ebfff0e7faa67bff829cb5b3",
+      "normalizations": []
+    },
+    {
+      "path": "io/project_schema.h.in",
+      "source_path": "linux/io/project_schema.h.in",
+      "source_sha256": "350c69ce86d34221b89a60e9be3fd884ce47cfd61577e6b716827f103c8bcf06",
+      "sha256": "350c69ce86d34221b89a60e9be3fd884ce47cfd61577e6b716827f103c8bcf06",
+      "normalizations": []
+    },
+    {
+      "path": "io/project_store.cpp",
+      "source_path": "linux/io/project_store.cpp",
+      "source_sha256": "50201c96e12622b70cf78994af5503b09c8eebd1255f21d23d094d50b143c516",
+      "sha256": "50201c96e12622b70cf78994af5503b09c8eebd1255f21d23d094d50b143c516",
+      "normalizations": []
+    },
+    {
+      "path": "io/project_store.h",
+      "source_path": "linux/io/project_store.h",
+      "source_sha256": "f8611ab011ff354cefbf93a7c275d91f57a87e939c43b534f7a3490d2f743979",
+      "sha256": "f8611ab011ff354cefbf93a7c275d91f57a87e939c43b534f7a3490d2f743979",
+      "normalizations": []
+    },
+    {
+      "path": "io/spill_backing.cpp",
+      "source_path": "linux/io/spill_backing.cpp",
+      "source_sha256": "1309c58dac24e64d56edc7e5ed2d5fdd0068c9c521bf6b993b44d9f2ccb0c904",
+      "sha256": "1309c58dac24e64d56edc7e5ed2d5fdd0068c9c521bf6b993b44d9f2ccb0c904",
+      "normalizations": []
+    },
+    {
+      "path": "io/spill_backing.h",
+      "source_path": "linux/io/spill_backing.h",
+      "source_sha256": "837409b6f85be834d282196227700f6df77b30004588034e8eb83daaaad1a76d",
+      "sha256": "837409b6f85be834d282196227700f6df77b30004588034e8eb83daaaad1a76d",
+      "normalizations": []
+    },
+    {
+      "path": "io/spill_directory.cpp",
+      "source_path": "linux/io/spill_directory.cpp",
+      "source_sha256": "438588ad98392d5ce0ebdf3af713f377ced55e6ddb066f2b3dcf931d8a08d1e8",
+      "sha256": "438588ad98392d5ce0ebdf3af713f377ced55e6ddb066f2b3dcf931d8a08d1e8",
+      "normalizations": []
+    },
+    {
+      "path": "io/spill_directory.h",
+      "source_path": "linux/io/spill_directory.h",
+      "source_sha256": "e4fb988518b2e5589938c4798b4e85274274cbf6d83bf64a7e7f66266d45bc3d",
+      "sha256": "e4fb988518b2e5589938c4798b4e85274274cbf6d83bf64a7e7f66266d45bc3d",
+      "normalizations": []
+    },
+    {
+      "path": "io/spill_store.cpp",
+      "source_path": "linux/io/spill_store.cpp",
+      "source_sha256": "ede39b869e4f1a2eac9d0be2b54230fd07120a205c239c12ac4b58cd33b144ba",
+      "sha256": "ede39b869e4f1a2eac9d0be2b54230fd07120a205c239c12ac4b58cd33b144ba",
+      "normalizations": []
+    },
+    {
+      "path": "io/spill_store.h",
+      "source_path": "linux/io/spill_store.h",
+      "source_sha256": "f0cacee96ecbbebd219a05f4b5850df1437713fd48cc3625e9fa1e4973601989",
+      "sha256": "f0cacee96ecbbebd219a05f4b5850df1437713fd48cc3625e9fa1e4973601989",
+      "normalizations": []
+    },
+    {
+      "path": "platform/canvas.cpp",
+      "source_path": "linux/platform/canvas.cpp",
+      "source_sha256": "3e3eb6c6a9c1d996942c2148c09e0d5add8b5d8ec47c19f6d1bbbdbc8661098e",
+      "sha256": "3e3eb6c6a9c1d996942c2148c09e0d5add8b5d8ec47c19f6d1bbbdbc8661098e",
+      "normalizations": []
+    },
+    {
+      "path": "platform/canvas.h",
+      "source_path": "linux/platform/canvas.h",
+      "source_sha256": "c4ee1a1d2e83ee039d1a10a029e723d87b16f2151d9c723b65c8b81b0feff5ec",
+      "sha256": "c4ee1a1d2e83ee039d1a10a029e723d87b16f2151d9c723b65c8b81b0feff5ec",
+      "normalizations": []
+    },
+    {
+      "path": "rendering/admitted_image.cpp",
+      "source_path": "linux/rendering/admitted_image.cpp",
+      "source_sha256": "3e5cb75c22399e9a6e954a70029a65cc3c2b9c65b3d3d016b3acec425fcc9db8",
+      "sha256": "3e5cb75c22399e9a6e954a70029a65cc3c2b9c65b3d3d016b3acec425fcc9db8",
+      "normalizations": []
+    },
+    {
+      "path": "rendering/admitted_image.h",
+      "source_path": "linux/rendering/admitted_image.h",
+      "source_sha256": "35990f8231167ab029bf83397a7ec4ed2c727876506caca79d9434249d117099",
+      "sha256": "35990f8231167ab029bf83397a7ec4ed2c727876506caca79d9434249d117099",
+      "normalizations": []
+    },
+    {
+      "path": "rendering/cpu_image.cpp",
+      "source_path": "linux/rendering/cpu_image.cpp",
+      "source_sha256": "753bdfcaf4dbae5e30c811bbd38575c1f807a3c888c526593cde691ab350a818",
+      "sha256": "753bdfcaf4dbae5e30c811bbd38575c1f807a3c888c526593cde691ab350a818",
+      "normalizations": []
+    },
+    {
+      "path": "rendering/cpu_image.h",
+      "source_path": "linux/rendering/cpu_image.h",
+      "source_sha256": "2cf89b602b185a7a79c28da16825b88ef28ac6ecbd6d01caee53ea1f5172bfe1",
+      "sha256": "2cf89b602b185a7a79c28da16825b88ef28ac6ecbd6d01caee53ea1f5172bfe1",
+      "normalizations": []
+    },
+    {
+      "path": "rendering/cpu_worker.h",
+      "source_path": "linux/rendering/cpu_worker.h",
+      "source_sha256": "eb78d937de138193539be2a2298a67d1904f92efc7b4102b00a3fb8b69ee252c",
+      "sha256": "eb78d937de138193539be2a2298a67d1904f92efc7b4102b00a3fb8b69ee252c",
+      "normalizations": []
+    },
+    {
+      "path": "rendering/display_pixel.h",
+      "source_path": "linux/rendering/display_pixel.h",
+      "source_sha256": "da46a08317ad0c2fe25dc005906936b3b31e5b2fa92df4ef0a804b13ad7948ca",
+      "sha256": "da46a08317ad0c2fe25dc005906936b3b31e5b2fa92df4ef0a804b13ad7948ca",
+      "normalizations": []
+    },
+    {
+      "path": "rendering/layer_sampler.cpp",
+      "source_path": "linux/rendering/layer_sampler.cpp",
+      "source_sha256": "b9c3fd9741a95c420db0e925c2b845bb3b51f7a7c6ad94c04f4c6b618e8a312c",
+      "sha256": "b9c3fd9741a95c420db0e925c2b845bb3b51f7a7c6ad94c04f4c6b618e8a312c",
+      "normalizations": []
+    },
+    {
+      "path": "rendering/layer_sampler.h",
+      "source_path": "linux/rendering/layer_sampler.h",
+      "source_sha256": "2520d686df6e908be9ab29f28698ee6147be0839f7fa92a9bdeb6df6f5fb525b",
+      "sha256": "2520d686df6e908be9ab29f28698ee6147be0839f7fa92a9bdeb6df6f5fb525b",
+      "normalizations": []
+    },
+    {
+      "path": "rendering/mip_cache.cpp",
+      "source_path": "linux/rendering/mip_cache.cpp",
+      "source_sha256": "913dd52dbc758cc437566424a8f264f359d3982e5f9682e7871373c113feb99c",
+      "sha256": "913dd52dbc758cc437566424a8f264f359d3982e5f9682e7871373c113feb99c",
+      "normalizations": []
+    },
+    {
+      "path": "rendering/mip_cache.h",
+      "source_path": "linux/rendering/mip_cache.h",
+      "source_sha256": "0b17239419056ee212b5ed7ef8dd71c59865d99441a02b46d64c6cda32d61a24",
+      "sha256": "0b17239419056ee212b5ed7ef8dd71c59865d99441a02b46d64c6cda32d61a24",
+      "normalizations": []
+    },
+    {
+      "path": "rendering/raster_reader.h",
+      "source_path": "linux/rendering/raster_reader.h",
+      "source_sha256": "7c3eac11b3119a613f0d94530eec3a7b236468697a72764b020f10f6978a0fe5",
+      "sha256": "7c3eac11b3119a613f0d94530eec3a7b236468697a72764b020f10f6978a0fe5",
+      "normalizations": []
+    },
+    {
+      "path": "rendering/thumbnail_worker.cpp",
+      "source_path": "linux/rendering/thumbnail_worker.cpp",
+      "source_sha256": "86881347ef376d59adf55f462162f6708f270e0e5010b7b79ff4297b507e7694",
+      "sha256": "86881347ef376d59adf55f462162f6708f270e0e5010b7b79ff4297b507e7694",
+      "normalizations": []
+    },
+    {
+      "path": "rendering/thumbnail_worker.h",
+      "source_path": "linux/rendering/thumbnail_worker.h",
+      "source_sha256": "2893b1d14f7a84d8c3d11f65f559c73f5309152d7f3b19ae5e0b64d765831862",
+      "sha256": "2893b1d14f7a84d8c3d11f65f559c73f5309152d7f3b19ae5e0b64d765831862",
+      "normalizations": []
+    },
+    {
+      "path": "rendering/tile_residency.cpp",
+      "source_path": "linux/rendering/tile_residency.cpp",
+      "source_sha256": "25a944da0f1b01277d874de918e9538dab4125d484441fe4ab1036a20fee6702",
+      "sha256": "25a944da0f1b01277d874de918e9538dab4125d484441fe4ab1036a20fee6702",
+      "normalizations": []
+    },
+    {
+      "path": "rendering/tile_residency.h",
+      "source_path": "linux/rendering/tile_residency.h",
+      "source_sha256": "d35471ab0b9063b8280d2390e888972505f3bd9e2f029faf6b0103f38543d1a4",
+      "sha256": "d35471ab0b9063b8280d2390e888972505f3bd9e2f029faf6b0103f38543d1a4",
+      "normalizations": []
+    },
+    {
+      "path": "shaders/blend.comp",
+      "source_path": "linux/shaders/blend.comp",
+      "source_sha256": "a25a9ece299b4154364563f678a5d3cc01e7508690b0c71d3655230205e987b5",
+      "sha256": "a25a9ece299b4154364563f678a5d3cc01e7508690b0c71d3655230205e987b5",
+      "normalizations": []
+    },
+    {
+      "path": "shaders/display.comp",
+      "source_path": "linux/shaders/display.comp",
+      "source_sha256": "44602b671911956e07b644f3c55698d6f43efb5052da5a9eada7d5c3e3962b49",
+      "sha256": "44602b671911956e07b644f3c55698d6f43efb5052da5a9eada7d5c3e3962b49",
+      "normalizations": []
+    },
+    {
+      "path": "shaders/sample.comp",
+      "source_path": "linux/shaders/sample.comp",
+      "source_sha256": "e564021bd6caedde0e4525199a7fbe7ab43048a41e64fe7b4b3b0f15d20582ab",
+      "sha256": "e564021bd6caedde0e4525199a7fbe7ab43048a41e64fe7b4b3b0f15d20582ab",
+      "normalizations": []
+    },
+    {
+      "path": "tests/adjustments_test.cpp",
+      "source_path": "linux/tests/adjustments_test.cpp",
+      "source_sha256": "bc7ab4ec3b3a45016c8c178b77eed0b1bf7ce9cb980f890eedabfc469ba4ee0f",
+      "sha256": "bc7ab4ec3b3a45016c8c178b77eed0b1bf7ce9cb980f890eedabfc469ba4ee0f",
+      "normalizations": []
+    },
+    {
+      "path": "tests/blend_test.cpp",
+      "source_path": "linux/tests/blend_test.cpp",
+      "source_sha256": "65c68238d0c9abf23e8f04586ddb0bd87c2261271c4210fea6dc1810f43e28da",
+      "sha256": "65c68238d0c9abf23e8f04586ddb0bd87c2261271c4210fea6dc1810f43e28da",
+      "normalizations": []
+    },
+    {
+      "path": "tests/brush_test.cpp",
+      "source_path": "linux/tests/brush_test.cpp",
+      "source_sha256": "3a9a7bbe1c6e0be7a4e7d34fda21666ea975313e0e230fc194de2caee2549150",
+      "sha256": "3a9a7bbe1c6e0be7a4e7d34fda21666ea975313e0e230fc194de2caee2549150",
+      "normalizations": []
+    },
+    {
+      "path": "tests/color_panel_test.cpp",
+      "source_path": "linux/tests/color_panel_test.cpp",
+      "source_sha256": "03bbef8dff57d54da0b4acc2ff1b793a3388416779ce6e62965723b00e1a68f1",
+      "sha256": "03bbef8dff57d54da0b4acc2ff1b793a3388416779ce6e62965723b00e1a68f1",
+      "normalizations": []
+    },
+    {
+      "path": "tests/coordinates_test.cpp",
+      "source_path": "linux/tests/coordinates_test.cpp",
+      "source_sha256": "f68568de7cd378590fc4a372f2e816905207374813eb5d1a0a7c17143dd0bb66",
+      "sha256": "f68568de7cd378590fc4a372f2e816905207374813eb5d1a0a7c17143dd0bb66",
+      "normalizations": []
+    },
+    {
+      "path": "tests/cpu_worker_test.cpp",
+      "source_path": "linux/tests/cpu_worker_test.cpp",
+      "source_sha256": "599e2955ec7c46d6fd4b450dd60189bc27682739fb785ae7a0bb186c89d12176",
+      "sha256": "599e2955ec7c46d6fd4b450dd60189bc27682739fb785ae7a0bb186c89d12176",
+      "normalizations": []
+    },
+    {
+      "path": "tests/document_workflow_test.cpp",
+      "source_path": "linux/tests/document_workflow_test.cpp",
+      "source_sha256": "d1cf414286a39f402abe23d9cec087e0b0649ef20ca02faa564e7b348a818f96",
+      "sha256": "d1cf414286a39f402abe23d9cec087e0b0649ef20ca02faa564e7b348a818f96",
+      "normalizations": []
+    },
+    {
+      "path": "tests/editing_persistence_test.cpp",
+      "source_path": "linux/tests/editing_persistence_test.cpp",
+      "source_sha256": "5c57442e8d74c35583df60bdcd0451aa86098b5eca01dfcd1585598540559950",
+      "sha256": "5c57442e8d74c35583df60bdcd0451aa86098b5eca01dfcd1585598540559950",
+      "normalizations": []
+    },
+    {
+      "path": "tests/editing_transition_test.cpp",
+      "source_path": "linux/tests/editing_transition_test.cpp",
+      "source_sha256": "6c82d4ddc57fef747016b5c5e6ebdee8d7ce3925138b3fd72b47eb3bd116f62b",
+      "sha256": "6c82d4ddc57fef747016b5c5e6ebdee8d7ce3925138b3fd72b47eb3bd116f62b",
+      "normalizations": []
+    },
+    {
+      "path": "tests/editor_workflow_test.cpp",
+      "source_path": "linux/tests/editor_workflow_test.cpp",
+      "source_sha256": "c530e4ce55c913e7f056f18b7634c18d44ce1b752c606887bb12a1f409c74118",
+      "sha256": "c530e4ce55c913e7f056f18b7634c18d44ce1b752c606887bb12a1f409c74118",
+      "normalizations": []
+    },
+    {
+      "path": "tests/engine_test.cpp",
+      "source_path": "linux/tests/engine_test.cpp",
+      "source_sha256": "b1982b6d5a80c7c9c4fd01fffc291f54cbcb76bc75d394991c3225cc3e546205",
+      "sha256": "b1982b6d5a80c7c9c4fd01fffc291f54cbcb76bc75d394991c3225cc3e546205",
+      "normalizations": []
+    },
+    {
+      "path": "tests/geometry_edits_test.cpp",
+      "source_path": "linux/tests/geometry_edits_test.cpp",
+      "source_sha256": "5a11bea87c21eaaaa276239fe6ee8e417d1d871174715b17c313e7e816acb4e2",
+      "sha256": "5a11bea87c21eaaaa276239fe6ee8e417d1d871174715b17c313e7e816acb4e2",
+      "normalizations": []
+    },
+    {
+      "path": "tests/gpu_blend_test.cpp",
+      "source_path": "linux/tests/gpu_blend_test.cpp",
+      "source_sha256": "7132ea6016e134f10dbe3716a3b00696731cd5aec9941b290af9f28a76123904",
+      "sha256": "7132ea6016e134f10dbe3716a3b00696731cd5aec9941b290af9f28a76123904",
+      "normalizations": []
+    },
+    {
+      "path": "tests/image_export_test.cpp",
+      "source_path": "linux/tests/image_export_test.cpp",
+      "source_sha256": "4c53e4ea229f46a30f5a44c51c6918eda221aeac0f78dcfc193976a3e8a3c097",
+      "sha256": "4c53e4ea229f46a30f5a44c51c6918eda221aeac0f78dcfc193976a3e8a3c097",
+      "normalizations": []
+    },
+    {
+      "path": "tests/image_pipeline_test.cpp",
+      "source_path": "linux/tests/image_pipeline_test.cpp",
+      "source_sha256": "90c1c74d84401d99cacbb5afb3d735843d55434b104f9e574894b95c07fc5b98",
+      "sha256": "90c1c74d84401d99cacbb5afb3d735843d55434b104f9e574894b95c07fc5b98",
+      "normalizations": []
+    },
+    {
+      "path": "tests/layer_stack_test.cpp",
+      "source_path": "linux/tests/layer_stack_test.cpp",
+      "source_sha256": "18e76c7abd3890e86da8436014932732b8aa6d44e45c71aef2672e96919e1173",
+      "sha256": "18e76c7abd3890e86da8436014932732b8aa6d44e45c71aef2672e96919e1173",
+      "normalizations": []
+    },
+    {
+      "path": "tests/layer_ui_benchmark.cpp",
+      "source_path": "linux/tests/layer_ui_benchmark.cpp",
+      "source_sha256": "47ae703f40f352c49889fe3a5367a2c8f50438aed589f43d55bacf4c202c87e8",
+      "sha256": "47ae703f40f352c49889fe3a5367a2c8f50438aed589f43d55bacf4c202c87e8",
+      "normalizations": []
+    },
+    {
+      "path": "tests/lifecycle_test.cpp",
+      "source_path": "linux/tests/lifecycle_test.cpp",
+      "source_sha256": "b7015724d974b514a7f62b3357621db0ad0c90bffc64a9d434f4954d24e3cfd0",
+      "sha256": "b7015724d974b514a7f62b3357621db0ad0c90bffc64a9d434f4954d24e3cfd0",
+      "normalizations": []
+    },
+    {
+      "path": "tests/mask_edits_test.cpp",
+      "source_path": "linux/tests/mask_edits_test.cpp",
+      "source_sha256": "89cba07a201f6c84a9a6f2491a34b4570c62f47c7598db3d87cd2581288ef0ec",
+      "sha256": "89cba07a201f6c84a9a6f2491a34b4570c62f47c7598db3d87cd2581288ef0ec",
+      "normalizations": []
+    },
+    {
+      "path": "tests/memory_admission_test.cpp",
+      "source_path": "linux/tests/memory_admission_test.cpp",
+      "source_sha256": "b0971841136949dc32714a35d40857d389ff8dee785bb232aa0021c0d3f502af",
+      "sha256": "b0971841136949dc32714a35d40857d389ff8dee785bb232aa0021c0d3f502af",
+      "normalizations": []
+    },
+    {
+      "path": "tests/project_resource_observation.cpp",
+      "source_path": "linux/tests/project_resource_observation.cpp",
+      "source_sha256": "3f16cebf0be508185f501986c42ad6eff3d3a7607fada26d6e4aca3fe6c9f863",
+      "sha256": "3f16cebf0be508185f501986c42ad6eff3d3a7607fada26d6e4aca3fe6c9f863",
+      "normalizations": []
+    },
+    {
+      "path": "tests/project_store_test.cpp",
+      "source_path": "linux/tests/project_store_test.cpp",
+      "source_sha256": "6adf62a091ad13c498bcf8138b071ba9c545436864eddb3e511cfe9fd8d92c7c",
+      "sha256": "6adf62a091ad13c498bcf8138b071ba9c545436864eddb3e511cfe9fd8d92c7c",
+      "normalizations": []
+    },
+    {
+      "path": "tests/qt_runtime_probe.cpp",
+      "source_path": "linux/tests/qt_runtime_probe.cpp",
+      "source_sha256": "b71f9a1641bac7f260078605aafe0462b461ac02504d066d955159c52a87cf2b",
+      "sha256": "b71f9a1641bac7f260078605aafe0462b461ac02504d066d955159c52a87cf2b",
+      "normalizations": []
+    },
+    {
+      "path": "tests/render_regions_test.cpp",
+      "source_path": "linux/tests/render_regions_test.cpp",
+      "source_sha256": "3c98952add5df2583df6ece8d125e5d0d22dbee708ea08004528bf690f88114b",
+      "sha256": "3c98952add5df2583df6ece8d125e5d0d22dbee708ea08004528bf690f88114b",
+      "normalizations": []
+    },
+    {
+      "path": "tests/render_source_test.cpp",
+      "source_path": "linux/tests/render_source_test.cpp",
+      "source_sha256": "7b0b22731765b1a651a4f63ebe9f15981f8cbaa9bdeaa157373a52c336c401a1",
+      "sha256": "7b0b22731765b1a651a4f63ebe9f15981f8cbaa9bdeaa157373a52c336c401a1",
+      "normalizations": []
+    },
+    {
+      "path": "tests/renderer_scheduler_test.cpp",
+      "source_path": "linux/tests/renderer_scheduler_test.cpp",
+      "source_sha256": "70e7cec6bed1ec8d9aca9646f99e765076d72c32d43c97ffb2ea14a17aedcd5f",
+      "sha256": "70e7cec6bed1ec8d9aca9646f99e765076d72c32d43c97ffb2ea14a17aedcd5f",
+      "normalizations": []
+    },
+    {
+      "path": "tests/resampling_test.cpp",
+      "source_path": "linux/tests/resampling_test.cpp",
+      "source_sha256": "cdf62f12448314b451bca5bcf93afa3f2546297ddfa598ed5a8cb4e763f080d9",
+      "sha256": "cdf62f12448314b451bca5bcf93afa3f2546297ddfa598ed5a8cb4e763f080d9",
+      "normalizations": []
+    },
+    {
+      "path": "tests/resource_integration_test.cpp",
+      "source_path": "linux/tests/resource_integration_test.cpp",
+      "source_sha256": "e889ad4dae5368f5d24887fcbdee1761d62a17502034e3ec5621a0597db03d74",
+      "sha256": "e889ad4dae5368f5d24887fcbdee1761d62a17502034e3ec5621a0597db03d74",
+      "normalizations": []
+    },
+    {
+      "path": "tests/resources_test.cpp",
+      "source_path": "linux/tests/resources_test.cpp",
+      "source_sha256": "6c6808c32053524b7bbbbc562525edcb455b897e6ec93df2473a40b31a7d8e2a",
+      "sha256": "6c6808c32053524b7bbbbc562525edcb455b897e6ec93df2473a40b31a7d8e2a",
+      "normalizations": []
+    },
+    {
+      "path": "tests/runtime_spill_test.cpp",
+      "source_path": "linux/tests/runtime_spill_test.cpp",
+      "source_sha256": "96144a416f7002e1228f6fb518796a03356e2526c005da0c3ba3e3bd43624c17",
+      "sha256": "96144a416f7002e1228f6fb518796a03356e2526c005da0c3ba3e3bd43624c17",
+      "normalizations": []
+    },
+    {
+      "path": "tests/selection_edits_test.cpp",
+      "source_path": "linux/tests/selection_edits_test.cpp",
+      "source_sha256": "5360c18d057172a7cc4e704f1a5c89c544db43062faa8446ec967dfa062255f7",
+      "sha256": "5360c18d057172a7cc4e704f1a5c89c544db43062faa8446ec967dfa062255f7",
+      "normalizations": []
+    },
+    {
+      "path": "tests/spill_backing_test.cpp",
+      "source_path": "linux/tests/spill_backing_test.cpp",
+      "source_sha256": "49d0119b95917a97464cb5fdff06840e8b3ed849c16271df3de335f05ba80b0e",
+      "sha256": "49d0119b95917a97464cb5fdff06840e8b3ed849c16271df3de335f05ba80b0e",
+      "normalizations": []
+    },
+    {
+      "path": "tests/spill_coordinator_test.cpp",
+      "source_path": "linux/tests/spill_coordinator_test.cpp",
+      "source_sha256": "2c3fe337011548ec6adc54777b849e7c67c51e2b82767633bc446957616a0ba2",
+      "sha256": "2c3fe337011548ec6adc54777b849e7c67c51e2b82767633bc446957616a0ba2",
+      "normalizations": []
+    },
+    {
+      "path": "tests/spill_directory_test.cpp",
+      "source_path": "linux/tests/spill_directory_test.cpp",
+      "source_sha256": "0bf5c87ac61c83233955b356393a2c4093b40d5b6a0b7a6792a0afcc063f0c82",
+      "sha256": "0bf5c87ac61c83233955b356393a2c4093b40d5b6a0b7a6792a0afcc063f0c82",
+      "normalizations": []
+    },
+    {
+      "path": "tests/spill_resource_observation.cpp",
+      "source_path": "linux/tests/spill_resource_observation.cpp",
+      "source_sha256": "0164f14b36c1e2c4f0bc8c14259286d44b858b04396623efe2b6910d359c6090",
+      "sha256": "0164f14b36c1e2c4f0bc8c14259286d44b858b04396623efe2b6910d359c6090",
+      "normalizations": []
+    },
+    {
+      "path": "tests/spill_store_test.cpp",
+      "source_path": "linux/tests/spill_store_test.cpp",
+      "source_sha256": "351949734d590bae1b34e3079244f61d3f19c8173ff8d9040e98da7ffabd9933",
+      "sha256": "351949734d590bae1b34e3079244f61d3f19c8173ff8d9040e98da7ffabd9933",
+      "normalizations": []
+    },
+    {
+      "path": "tests/spill_tile_payload_test.cpp",
+      "source_path": "linux/tests/spill_tile_payload_test.cpp",
+      "source_sha256": "3aff1e9f9f5f7005f67030b2cb5d115b822d632a910a8d34a4ae1f6b7e9983d9",
+      "sha256": "3aff1e9f9f5f7005f67030b2cb5d115b822d632a910a8d34a4ae1f6b7e9983d9",
+      "normalizations": []
+    },
+    {
+      "path": "tests/thumbnail_worker_test.cpp",
+      "source_path": "linux/tests/thumbnail_worker_test.cpp",
+      "source_sha256": "4a4b756924a5013190594a17091a0ec142c52501901e232e5d3c143a4c0becb1",
+      "sha256": "4a4b756924a5013190594a17091a0ec142c52501901e232e5d3c143a4c0becb1",
+      "normalizations": []
+    },
+    {
+      "path": "tests/tile_residency_test.cpp",
+      "source_path": "linux/tests/tile_residency_test.cpp",
+      "source_sha256": "e9aad04e815fc0ea8df763174485a754dd8b61303fd9506fcca0044bed6d4579",
+      "sha256": "e9aad04e815fc0ea8df763174485a754dd8b61303fd9506fcca0044bed6d4579",
+      "normalizations": []
+    },
+    {
+      "path": "tests/tile_spill_test.cpp",
+      "source_path": "linux/tests/tile_spill_test.cpp",
+      "source_sha256": "392e86f4cd589a869e934854894bbfba4f03d061aba41cc85b13af2f357caf59",
+      "sha256": "392e86f4cd589a869e934854894bbfba4f03d061aba41cc85b13af2f357caf59",
+      "normalizations": []
+    },
+    {
+      "path": "tests/tool_controller_test.cpp",
+      "source_path": "linux/tests/tool_controller_test.cpp",
+      "source_sha256": "575b182bb6cdc67ec9ea23896ccc19eae427386d9ba303d51e319c3e76a4fbd1",
+      "sha256": "575b182bb6cdc67ec9ea23896ccc19eae427386d9ba303d51e319c3e76a4fbd1",
+      "normalizations": []
+    },
+    {
+      "path": "tools/generate_hard_mix_thresholds.py",
+      "source_path": "linux/tools/generate_hard_mix_thresholds.py",
+      "source_sha256": "a0360a9b2d391eaafc0d75d624e0c2362e78ce6d2c55490e071f29974886efc4",
+      "sha256": "a0360a9b2d391eaafc0d75d624e0c2362e78ce6d2c55490e071f29974886efc4",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/blend_kernel.cpp",
+      "source_path": "linux/vulkan/blend_kernel.cpp",
+      "source_sha256": "820932621727f18253fabac034fe244e1a165568e8ac0793bee155411b28a2ce",
+      "sha256": "820932621727f18253fabac034fe244e1a165568e8ac0793bee155411b28a2ce",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/blend_kernel.h",
+      "source_path": "linux/vulkan/blend_kernel.h",
+      "source_sha256": "ab49164a6d498263c326f5808958f2b08aedd8cca5edea992dd30b2fc26ca88c",
+      "sha256": "ab49164a6d498263c326f5808958f2b08aedd8cca5edea992dd30b2fc26ca88c",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/buffer.cpp",
+      "source_path": "linux/vulkan/buffer.cpp",
+      "source_sha256": "8ad1f8de385426048598ac588b0766e65968e0e1a333a0cb11ab55f371972645",
+      "sha256": "8ad1f8de385426048598ac588b0766e65968e0e1a333a0cb11ab55f371972645",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/buffer.h",
+      "source_path": "linux/vulkan/buffer.h",
+      "source_sha256": "2f59ee2141a0d1d6957026ac8eade416ad7e080d801409748949565553bb4792",
+      "sha256": "2f59ee2141a0d1d6957026ac8eade416ad7e080d801409748949565553bb4792",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/display_kernel.cpp",
+      "source_path": "linux/vulkan/display_kernel.cpp",
+      "source_sha256": "3e2331934ed437bd188832a7d58a8f349f4c6011159fae7d6b7092032d82c98b",
+      "sha256": "3e2331934ed437bd188832a7d58a8f349f4c6011159fae7d6b7092032d82c98b",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/display_kernel.h",
+      "source_path": "linux/vulkan/display_kernel.h",
+      "source_sha256": "15e6c038a1936515a9557f4bfacb333b81a1187eacf5849f7cc8fe013d103e20",
+      "sha256": "15e6c038a1936515a9557f4bfacb333b81a1187eacf5849f7cc8fe013d103e20",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/layer_block.cpp",
+      "source_path": "linux/vulkan/layer_block.cpp",
+      "source_sha256": "47219366f4f21f6b14b6327fffa92892b95322d8d19f96a34d72452a26a44e53",
+      "sha256": "47219366f4f21f6b14b6327fffa92892b95322d8d19f96a34d72452a26a44e53",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/layer_block.h",
+      "source_path": "linux/vulkan/layer_block.h",
+      "source_sha256": "4ad571178c8aae6c3b85b2f75d89a263ab6a0b489cf5d55a872b375a8016fe79",
+      "sha256": "4ad571178c8aae6c3b85b2f75d89a263ab6a0b489cf5d55a872b375a8016fe79",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/layer_frame.cpp",
+      "source_path": "linux/vulkan/layer_frame.cpp",
+      "source_sha256": "836550cf6659f1e782272888e970ce350e2ad903c3bc8d9658ad225feff71802",
+      "sha256": "836550cf6659f1e782272888e970ce350e2ad903c3bc8d9658ad225feff71802",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/layer_frame.h",
+      "source_path": "linux/vulkan/layer_frame.h",
+      "source_sha256": "f3eca104b71f872535220f33be9155e73a059aec9bfa697a429c1353003debe4",
+      "sha256": "f3eca104b71f872535220f33be9155e73a059aec9bfa697a429c1353003debe4",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/mip_cache.cpp",
+      "source_path": "linux/vulkan/mip_cache.cpp",
+      "source_sha256": "8bcc769763b05a47f500f92b883a4b4be8a43381a28822c34f987061cd2bdc1a",
+      "sha256": "8bcc769763b05a47f500f92b883a4b4be8a43381a28822c34f987061cd2bdc1a",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/mip_cache.h",
+      "source_path": "linux/vulkan/mip_cache.h",
+      "source_sha256": "4304dbe601c8a80e695c6a26e601cc95a2e295dfe8e76af7f4930bce889e7319",
+      "sha256": "4304dbe601c8a80e695c6a26e601cc95a2e295dfe8e76af7f4930bce889e7319",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/renderer.cpp",
+      "source_path": "linux/vulkan/renderer.cpp",
+      "source_sha256": "eb0174e99464c173e7b011dcf05505bbd67a501daa81f6c7e5c5a6d8e8a56d1d",
+      "sha256": "eb0174e99464c173e7b011dcf05505bbd67a501daa81f6c7e5c5a6d8e8a56d1d",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/renderer.h",
+      "source_path": "linux/vulkan/renderer.h",
+      "source_sha256": "abce9384cbcacfc00c699b2b2cad44c57100aaadb3afcfff27759be73f0e984d",
+      "sha256": "abce9384cbcacfc00c699b2b2cad44c57100aaadb3afcfff27759be73f0e984d",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/sample_kernel.cpp",
+      "source_path": "linux/vulkan/sample_kernel.cpp",
+      "source_sha256": "ffe8d83483b22d4413663159f7725badb74a664367fdc26fa0c79d1395ee7aaa",
+      "sha256": "ffe8d83483b22d4413663159f7725badb74a664367fdc26fa0c79d1395ee7aaa",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/sample_kernel.h",
+      "source_path": "linux/vulkan/sample_kernel.h",
+      "source_sha256": "2ccea486551aacb9004901646c7cad386004eef6896b82bf85c23cb65262be33",
+      "sha256": "2ccea486551aacb9004901646c7cad386004eef6896b82bf85c23cb65262be33",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/tile_cache.cpp",
+      "source_path": "linux/vulkan/tile_cache.cpp",
+      "source_sha256": "a5fab65f697637e15f36162886c5c9c3e54fc7db191d6a81b0f995b9b6ac9778",
+      "sha256": "a5fab65f697637e15f36162886c5c9c3e54fc7db191d6a81b0f995b9b6ac9778",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/tile_cache.h",
+      "source_path": "linux/vulkan/tile_cache.h",
+      "source_sha256": "848932c5cd2b5b9160e66dff19cc789930619c4b7141479320b0ea68bc573cc0",
+      "sha256": "848932c5cd2b5b9160e66dff19cc789930619c4b7141479320b0ea68bc573cc0",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/tile_upload.cpp",
+      "source_path": "linux/vulkan/tile_upload.cpp",
+      "source_sha256": "e6dd964c113b5a98fa4ff28e5e4cc52e3a247a90090d190019bf71c59c156c7b",
+      "sha256": "e6dd964c113b5a98fa4ff28e5e4cc52e3a247a90090d190019bf71c59c156c7b",
+      "normalizations": []
+    },
+    {
+      "path": "vulkan/tile_upload.h",
+      "source_path": "linux/vulkan/tile_upload.h",
+      "source_sha256": "0a11e0c9f5f03f00ce1c476c7de6e41ec36c0db6b4b88188aa0c24700b2b0dbc",
+      "sha256": "0a11e0c9f5f03f00ce1c476c7de6e41ec36c0db6b4b88188aa0c24700b2b0dbc",
+      "normalizations": []
+    }
+  ],
+  "publication_exclusions": [
+    "AGENTS.md: AI-agent instructions omitted from the published source tree"
+  ]
+}

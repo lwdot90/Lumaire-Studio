@@ -1,0 +1,41 @@
+#version 450
+#extension GL_ARB_gpu_shader_fp64 : require
+layout(local_size_x=64) in;
+layout(set=0,binding=0,std430) readonly buffer Linear {vec4 pixels[];} source;
+layout(set=0,binding=1,std430) writeonly buffer Display {uint pixels[];} outputImage;
+layout(push_constant) uniform Parameters {
+    dvec2 origin; dvec2 step;
+    uvec2 size; uvec2 canvas;
+    uint base; uint count; uint cell; uint bgra;
+    vec2 background;
+} p;
+float encode(float value) {
+    float c=abs(value);
+    float code=c<=0.0031308 ? 12.92*c : 1.055*pow(c,1.0/2.4)-0.055;
+    return value<0 ? -code : code;
+}
+uint quantize(float value,float dither) {
+    precise float scaled=255.0*value+dither;
+    return uint(roundEven(clamp(scaled,0.0,255.0)));
+}
+int bayer(ivec2 position) {
+    const int values[4]=int[4](0,2,3,1);
+    int value=0;
+    for(int bit=0;bit<3;++bit) value=value*4+values[((position.y>>bit)&1)*2+((position.x>>bit)&1)];
+    return value;
+}
+void main() {
+    uint local=gl_GlobalInvocationID.x;
+    if(local>=p.count) return;
+    uint index=p.base+local;
+    uvec2 pixel=uvec2(index%p.size.x,index/p.size.x);
+    precise dvec2 position=p.origin+dvec2(pixel)*p.step;
+    if(any(lessThan(position,dvec2(0))) || any(greaterThanEqual(position,dvec2(p.canvas)))) {
+        outputImage.pixels[local]=0xff1f1f1fu;return;
+    }
+    float background=p.background[((pixel.x/p.cell)+(pixel.y/p.cell))&1u];
+    precise vec3 color=source.pixels[local].rgb+vec3(background)*(1.0-source.pixels[local].a);
+    float dither=(float(bayer(ivec2(floor(position))&ivec2(7)))+0.5)/64.0-0.5;
+    uint r=quantize(encode(color.r),dither),g=quantize(encode(color.g),dither),b=quantize(encode(color.b),dither);
+    outputImage.pixels[local]=0xff000000u|(g<<8)|(p.bgra!=0 ? (r<<16)|b : (b<<16)|r);
+}

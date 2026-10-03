@@ -1,0 +1,6 @@
+#pragma once
+namespace compositor::io {
+inline constexpr const char* projectSchemaV1=R"CPROJ(@COMPOSITOR_PROJECT_SCHEMA_V1@)CPROJ";
+inline constexpr const char* projectSchemaV2=R"CPROJ(@COMPOSITOR_PROJECT_SCHEMA_V2@)CPROJ";
+inline constexpr const char* projectSchema=R"CPROJ(@COMPOSITOR_PROJECT_SCHEMA@)CPROJ";
+}
