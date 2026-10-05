@@ -1,0 +1,11 @@
+# Native project format 4
+
+Version 4 keeps the version 3 SQL layout, selected canvas region, masks, ICC profiles and streamed tile encodings. Its semantic extension is a canonical raster parameter record. Readers still accept versions 1–3; new saves write version 4, including plain raster documents.
+
+An adjusted layer's `asset_uuid` references its retained unadjusted source. Only source and mask tiles are persisted, never derived display tiles. `parameters_json` is compact canonical JSON with `version:2`, `kind:"raster"`, processing `policy:1`, source UUID, rendered UUID, decimal-string rendered revision, numeric sampling and an ordered operations array. Each operation is `[kind,value,[inputBlack,inputWhite,gamma,outputBlack,outputWhite],[[input,output],...],[warmth,tint]]`. Numeric kinds and sampling match the frozen engine enums. Every operation retains all parameter fields, even fields irrelevant to its kind.
+
+Stacks contain 1–16 operations and curves 2–16 points. Numbers must be finite and pass the engine's strict ranges; policy and operation kinds are closed. Parameter records are limited to 32 KiB each and 4 MiB total. Unknown keys, duplicate keys, alternate whitespace and noncanonical numeric encodings are rejected by parsing and canonical reserialization. Source UUID must match the layer's referenced source. Derived identities cannot conflict with stored source or mask assets, and shared derived identities require identical source, operations, policy and rendered revision. Sampling belongs to each layer and is excluded from derived pixel-cache identity.
+
+Loading first validates graph and bounded canonical tile data, then reevaluates each distinct ordered stack on the supplied worker TileStore. Publication occurs only after successful complete evaluation and the final file identity check. Derived UUID/revision are restored after evaluation so shared immutable caches preserve their identity. Cancellation or resource refusal publishes no document. Atomic replacement and durability handling remain unchanged.
+
+Policy 1 uses the existing premultiplied linear RGBA16F engine. Layers retain source profiles, masks and placement independently of whole-source adjustments. Selection is document metadata and does not scope revisable operations. Destructive rasterization is an explicit separate command.

@@ -1,4 +1,7 @@
 #include "core/resources.h"
+#if defined(__GLIBC__)
+#include <malloc.h>
+#endif
 #include "core/tiles.h"
 #include "core/spill_coordinator.h"
 #include "io/spill_directory.h"
@@ -142,6 +145,11 @@ RuntimeResources::RuntimeResources(ResourceLimits profile,MemoryAdmission::Probe
         if(const auto coordinator=weak.lock()) {
             const auto target=bytes>std::numeric_limits<std::uint64_t>::max()/2 ? bytes : bytes*2;
             const auto result=coordinator->reclaim(target);
+#if defined(__GLIBC__)
+            // Released tile and worker buffers can remain in allocator arenas.
+            // Return free pages before the admission retry samples process RSS.
+            (void)::malloc_trim(0);
+#endif
             if(result.firstFailure && !result.releasedTrackedBytes) std::rethrow_exception(result.firstFailure);
         }
     });

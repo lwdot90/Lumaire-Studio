@@ -3,4 +3,7 @@ namespace compositor::io {
 inline constexpr const char* projectSchemaV1=R"CPROJ(@COMPOSITOR_PROJECT_SCHEMA_V1@)CPROJ";
 inline constexpr const char* projectSchemaV2=R"CPROJ(@COMPOSITOR_PROJECT_SCHEMA_V2@)CPROJ";
 inline constexpr const char* projectSchema=R"CPROJ(@COMPOSITOR_PROJECT_SCHEMA@)CPROJ";
+inline constexpr const char* projectSchemaV4 = R"SCHEMA(@COMPOSITOR_PROJECT_SCHEMA_V4@)SCHEMA";
+inline constexpr const char* projectSchemaV5 = R"SCHEMA(@COMPOSITOR_PROJECT_SCHEMA_V5@)SCHEMA";
+inline constexpr const char* projectSchemaV6 = R"SCHEMA(@COMPOSITOR_PROJECT_SCHEMA_V6@)SCHEMA";
 }

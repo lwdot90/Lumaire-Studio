@@ -1,6 +1,6 @@
 # Lumaire Studio roadmap
 
-Revised October 2, 2026 (local time). This is the active delivery plan for the standalone
+Revised October 4, 2026 (local time). This is the active delivery plan for the standalone
 Linux project. It separates implementation progress from product qualification.
 It replaces the former open-ended milestone scheduling, without turning any
 failed or pending acceptance result into a pass.
@@ -20,8 +20,10 @@ by the present development build.
 
 ## Current position
 
-**D1 — raster development delivery is complete. The next feature phase is D2
-— revisable photo editing. Outstanding broader qualification is tracked separately.**
+**D1 and D2 are complete at their frozen development scopes. D2 passed the
+portrait/product edit, revision, save/reopen and export brief, independent
+saved-file verification, visual review and settled controls. D3 — professional
+compositing — is next. Broader release qualification remains separate.**
 
 At source checkpoint `55937cf`, the application has brush/erase, affine layer
 transforms, source-preserving crop/canvas resize, hard rectangle/ellipse
@@ -40,8 +42,32 @@ D1 subsequently passed current-source native UI, Intel GPU/CPU comparisons,
 Vulkan/fallback lifecycle and the complete 42-test suite. See the
 [phase-1 acceptance record](docs/raster-delivery-acceptance.md).
 
-Pixel adjustments are destructive commands, not revisable adjustment layers.
-Canvas resize does not supply a complete image-resampling workflow. Current ICC
+The original pixel commands remain destructive. D2 now also provides retained-source
+ordered stacks of all seven adjustments, with saved settings, live preview and
+a bounded histogram; see [stack acceptance](docs/revisable-adjustments-acceptance.md).
+The next implemented packet adds a master RGB curve plus independent Red,
+Green and Blue curves. Its serial release build and all 53 CTests passed in
+23.47 seconds; native initialized-control, stack-dialog and channel-workflow
+checks passed 11, 6 and 3 Qt cases respectively. The channel workflow used
+actual controls for undo/redo, save/reopen, revisions, cancellation and PNG/JPEG
+output. See [channel acceptance](docs/per-channel-curves-acceptance.md).
+That packet wrote schema 5 and read schemas 1–4. The integrated editor now
+writes schema 6 and reads schemas 1–5, adding retained Clone/Heal strokes with
+revisable strength, soft selections, paintable/featherable masks, and Image size
+resampling. See the [photo tools guide](docs/d2-photo-tools-guide.md).
+
+All 61 default tests passed on the final integrated source. Both original-size
+4000×3000 portrait/product workflows passed on the laptop's CPU backend,
+including retouch and grade revisions, soft masks, save/reopen, delivery-size
+resampling and PNG/JPEG export. Corrected donor and coverage recipes passed
+independent full-resolution visual review and saved-project verification.
+Maximum sampled process RSS was 1,517,277,184 bytes; released spill returned to
+zero. Failed earlier recipes remain recorded in
+[D2 acceptance](docs/d2-photo-acceptance.md), alongside the exact scope and limits.
+Image size resamples retained source grids and linked masks; reducing size loses
+detail in that document. The acceptance workflow preserves a separate
+full-resolution revision project. Canvas size remains a distinct affine sizing
+command. Current ICC
 import handling is not professional working-profile/proof/output support.
 Session spill is not crash recovery. The current RGBA16F contract does not prove
 precision-preserving integer16/FP32 editing.
@@ -85,7 +111,7 @@ or canceled operation must preserve the previous committed document.
 | Phase | Deliverable | Finite finished-work gate |
 | --- | --- | --- |
 | D1 — Raster development delivery (complete) | Delivered editing tool set, bounded failure/cancellation and passed H1/H2 checks | Import → paint/erase → transform → selection/mask → adjustment → undo → native save/reopen → PNG/JPEG through real UI. Record native/fallback results separately. No professional replacement claim. |
-| D2 — Revisable photo editing | Persisted adjustment parameters/layers, live drafts, histogram, per-channel curves, soft masks, clone/healing and defined image resampling | Retouch and grade a portrait/product; reopen, revise mask boundaries and adjustment/retouch strength, and export without reconstructing flattened edits. |
+| D2 — Revisable photo editing (complete) | Persisted adjustment parameters/layers, live drafts, histogram, per-channel curves, soft masks, clone/healing and defined image resampling | Retouch and grade a portrait/product; reopen, revise mask boundaries and adjustment/retouch strength, and export without reconstructing flattened edits. |
 | D3 — Professional compositing | Selection algebra/feathering/lasso, richer masks/clipping, isolated groups, editable source objects, effects and source-preserving transforms | Build a ten-source advertising composite; reopen, replace a source, revise placement/grade, retain required fine-edge/translucent detail and export. |
 | D4 — Editable graphic design | Point/paragraph text and shaping, vectors/paths, guides, alignment/distribution, layout variants and persisted styles | Create poster/social variants; reopen and change wording/font/layout. Text remains text, vectors remain vectors and style parameters remain editable. |
 | D5 — Managed photo, interchange and print | Qualified RAW source/development, integer16/FP32 and color policies, ICC working/proof/output support, named PSD/PSB profiles, CMYK and print TIFF/PDF | Develop a retained RAW source to qualified high-depth output; satisfy a named print-provider brief; separately execute the declared Linux → Photoshop → Linux editable handoff in actual Photoshop. |
@@ -107,13 +133,32 @@ separate dependency/fixture decisions and cannot inherit raster-only evidence.
 1. Preserve the completed D1/H1/H2 checks as regression coverage.
 2. Freeze D2's persisted adjustment/draft contract and its portrait/product
    fixture, expected deliverables and revision request before coding.
-3. Deliver the first D2 packet: one revisable adjustment with live preview,
-   commit/cancel, undo and native reopen. Integrate immediately when it passes.
-4. Deliver a bounded histogram and extend the same contract to Levels/Curves/
-   Color Balance, with UI controls and saved parameter revisions.
-5. Add soft selection/mask editing and clone/healing as independent packets;
-   integrate them into the frozen photo brief. Start durable recovery in parallel.
-6. Run the actual photo brief and record its measured 8 GB limits; then begin D3.
+3. First D2 packet delivered locally: Revisable Exposure with live preview,
+   commit/cancel, undo, retained-source schema 4 reopen and histogram. Current
+   release build passes 49 CTests and the native Wayland edit/export workflow;
+   see [packet acceptance](docs/revisable-exposure-acceptance.md). Changes remain
+   uncommitted pending the owner’s commit instruction.
+4. Seven-kind revisable stacks and their histogram/UI/native persistence are
+   delivered locally. Master plus independent RGB channel Curves and schema 5
+   persistence passed the bounded development packet's serial build, 53-test
+   suite and native edit/revision/export checks. Preserve the earlier stack
+   acceptance record's combined-RGB scope; new results are recorded in the
+   channel acceptance record. A bounded procedural 4000×3000 channel-stack
+   observation passed in 64.341 seconds: maximum sampled RSS 715,935,744 bytes
+   (about 683 MiB), admitted memory 692,736,488 bytes, and spill 96,784,384 bytes
+   across 192 entries. Released spill returned to zero with no cleanup failures.
+   This does not qualify the real-photo brief or full LP8; see acceptance for
+   the measured fixture and limits.
+5. Soft selection/mask editing, retained clone/healing and actual image
+   resampling are integrated in schema 6. Their primary photograph workflow
+   checks passed; retain the tool-specific limits and full-resolution projects.
+6. D2's actual-photo brief is complete: final native workflows, independent
+   saved-file verification, visual acceptance and settled controls all passed.
+   Preserve these regressions and the full-resolution A/B/C projects.
+7. Begin D3 with a frozen ten-source compositing brief and separate interface/file
+   ownership for its feature packets. Durable recovery remains a separate
+   release requirement.
+
 
 Do not reopen M3 for each new tool. Renderer optimizations enter the active queue
 when a reproduced defect or measured workflow bottleneck makes them necessary.
@@ -136,4 +181,4 @@ when a reproduced defect or measured workflow bottleneck makes them necessary.
   Photoshop-level completion date before the major dependencies are resolved.
 
 The [editing guide](docs/today-editor-guide.md) describes today's controls.
-The [native format](docs/project-format-v3.md) defines current schema semantics.
+The [native format](docs/project-format-v6.md) defines current schema semantics.

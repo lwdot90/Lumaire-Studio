@@ -1,4 +1,9 @@
 #include "io/project_store.h"
+#include "io/adjustment_parameters.h"
+#include "io/retouch_parameters.h"
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 #include "project_schema.h"
 #include <QCryptographicHash>
 #include <QDir>
@@ -58,17 +63,31 @@ PackedPixel readPacked(const QByteArray& bytes) {
     for(int i=0;i<4;++i) p[static_cast<std::size_t>(i)]=static_cast<Half>(static_cast<unsigned char>(bytes[i*2])|(static_cast<unsigned>(static_cast<unsigned char>(bytes[i*2+1]))<<8));
     validateCanonical(p); return p;
 }
-std::string selectionJson(const std::optional<Selection>& selection,int width,int height) {
+std::string selectionJson(const std::optional<Selection>& selection,int width,int height,int version=6) {
     if(!selection) return "null";
     selection->validate(width,height);
     const auto& b=selection->bounds;
+    if(version>=6) {
+        QJsonObject o{{"version",2},{"shape",selection->shape==SelectionShape::Rectangle ? "rectangle" : "ellipse"},{"bounds",QJsonArray{QString::number(b.x),QString::number(b.y),QString::number(b.width),QString::number(b.height)}},{"inverted",selection->inverted},{"featherRadius",selection->featherRadius}};
+        return QJsonDocument(o).toJson(QJsonDocument::Compact).toStdString();
+    }
+    require(selection->featherRadius==0,"Legacy selection cannot retain feathering");
     return std::string("{\"version\":1,\"shape\":\"")+(selection->shape==SelectionShape::Rectangle ? "rectangle" : "ellipse")+
         "\",\"bounds\":["+std::to_string(b.x)+","+std::to_string(b.y)+","+std::to_string(b.width)+","+std::to_string(b.height)+
         "],\"inverted\":"+(selection->inverted ? "true" : "false")+"}";
 }
-std::optional<Selection> readSelection(const std::string& text,int width,int height) {
+std::optional<Selection> readSelection(const std::string& text,int width,int height,int version) {
     require(text.size()<=512,"Oversized selection parameters");
     if(text=="null") return {};
+    if(version>=6) {
+        QJsonParseError error;auto doc=QJsonDocument::fromJson(QByteArray::fromStdString(text),&error);
+        require(error.error==QJsonParseError::NoError&&doc.isObject(),"Invalid selection JSON");auto o=doc.object();
+        require(o.value("version").toInt(-1)==2&&o.value("bounds").isArray()&&o.value("bounds").toArray().size()==4&&o.value("inverted").isBool()&&o.value("featherRadius").isDouble(),"Invalid selection parameters");
+        std::array<std::int64_t,4> b{};auto a=o.value("bounds").toArray();for(int i=0;i<4;++i){bool ok=false;b[static_cast<std::size_t>(i)]=a[i].toString().toLongLong(&ok);require(ok,"Selection bound overflow");}
+        auto shape=o.value("shape").toString();require(shape=="rectangle"||shape=="ellipse","Unsupported selection shape");
+        Selection result{{b[0],b[1],b[2],b[3]},shape=="rectangle"?SelectionShape::Rectangle:SelectionShape::Ellipse,o.value("inverted").toBool(),o.value("featherRadius").toDouble()};result.validate(width,height);
+        require(selectionJson(result,width,height,version)==text,"Noncanonical selection parameters");return result;
+    }
     static const QRegularExpression pattern(QStringLiteral(R"JSON(\A\{"version":1,"shape":"(rectangle|ellipse)","bounds":\[(-?(?:0|[1-9][0-9]*)),(-?(?:0|[1-9][0-9]*)),(-?(?:0|[1-9][0-9]*)),(-?(?:0|[1-9][0-9]*))\],"inverted":(true|false)\}\z)JSON"));
     const auto match=pattern.match(QString::fromUtf8(text));
     require(match.hasMatch(),"Invalid or unsupported selection parameters");
@@ -76,7 +95,7 @@ std::optional<Selection> readSelection(const std::string& text,int width,int hei
     for(int i=0;i<4;++i) {bool valid=false;values[static_cast<std::size_t>(i)]=match.captured(i+2).toLongLong(&valid);require(valid,"Selection bound overflow");}
     Selection selection{{values[0],values[1],values[2],values[3]},match.captured(1)=="rectangle" ? SelectionShape::Rectangle : SelectionShape::Ellipse,match.captured(6)=="true"};
     selection.validate(width,height);
-    require(selectionJson(selection,width,height)==text,"Noncanonical selection parameters");
+    require(selectionJson(selection,width,height,version)==text,"Noncanonical selection parameters");
     return selection;
 }
 void validateMaskPixel(PackedPixel value) {
@@ -202,9 +221,9 @@ std::int64_t validateSchema(Db& db) {
     // DDL, views, triggers or virtual tables, nor silently drop unknown fields.
     Query app(db,"PRAGMA application_id"); require(app.row() && app.integer(0)==1129337418,"Not a Compositor project"); app.end();
     Query version(db,"PRAGMA user_version"); require(version.row(),"Missing project version");
-    const auto value=version.integer(0); require(value==1 || value==2 || value==3,"Unsupported project version"); version.end();
+    const auto value=version.integer(0); require(value==1 || value==2 || value==3 || value==4 || value==5 || value==6,"Unsupported project version"); version.end();
     Db trusted(":memory:",SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE);
-    trusted.exec(value==1 ? projectSchemaV1 : value==2 ? projectSchemaV2 : projectSchema);
+    trusted.exec(value==1 ? projectSchemaV1 : value==2 ? projectSchemaV2 : value==3 ? projectSchema : value==4 ? projectSchemaV4 : value==5 ? projectSchemaV5 : projectSchemaV6);
     require(schema(db)==schema(trusted),"Project table structure does not match its declared version");
     return value;
 }
@@ -243,13 +262,13 @@ LoadedProject loadProject(const QString& path, TileStore& tiles, std::stop_token
     ReadProgress state{stop}; sqlite3_progress_handler(db.handle,1000,progress,&state);
     const auto formatVersion=validateSchema(db);
     Query integrity(db,"PRAGMA quick_check(1)"); require(integrity.row() && integrity.text(0)=="ok","Project database is corrupt"); integrity.end();
-    Query project(db,formatVersion==3 ? "SELECT id,format,uuid,width,height,resolution,working_space,saved_revision,required_features_json,selection_json FROM project" : "SELECT id,format,uuid,width,height,resolution,working_space,saved_revision,required_features_json,'null' FROM project");
+    Query project(db,formatVersion>=3 ? "SELECT id,format,uuid,width,height,resolution,working_space,saved_revision,required_features_json,selection_json FROM project" : "SELECT id,format,uuid,width,height,resolution,working_space,saved_revision,required_features_json,'null' FROM project");
     require(project.row(),"Project header missing");
     require(project.integer(0)==1 && project.text(1)=="compositor-linux" && project.text(6)=="linear-srgb-extended-v1" && project.text(8)=="[]","Unsupported project features");
     Id docId(project.text(2));
     const auto width=project.integer(3),height=project.integer(4),revision=project.integer(7);
     Extent{0,0,width,height}.validate(); const auto resolution=project.real(5);
-    const auto selection=readSelection(project.text(9),static_cast<int>(width),static_cast<int>(height)); project.end();
+    const auto selection=readSelection(project.text(9),static_cast<int>(width),static_cast<int>(height),static_cast<int>(formatVersion)); project.end();
     Query profiles(db,"SELECT uuid,role,icc,checksum FROM profiles");
     std::map<std::string,std::shared_ptr<const SourceProfile>> profileMap;
     while(profiles.row()) {
@@ -265,10 +284,10 @@ LoadedProject loadProject(const QString& path, TileStore& tiles, std::stop_token
     std::set<std::string> maskAssets;
     Query assets(db,"SELECT uuid,origin_x,origin_y,width,height,format,default_value,revision,source_profile FROM assets");
     while(assets.row()) {
-        cancelled(stop); require(assetMap.size()<static_cast<std::size_t>(formatVersion==3 ? 20000 : 10000),"Excess asset count"); Id assetId(assets.text(0));
+        cancelled(stop); require(assetMap.size()<static_cast<std::size_t>(formatVersion>=3 ? 20000 : 10000),"Excess asset count"); Id assetId(assets.text(0));
         const Extent extent{assets.integer(1),assets.integer(2),assets.integer(3),assets.integer(4)}; extent.validate();
         const bool isMask=assets.text(5)=="mask-rgba16f-le";
-        require(assets.text(5)=="rgba16f-le" || (formatVersion==3 && isMask),"Unsupported asset format");
+        require(assets.text(5)=="rgba16f-le" || (formatVersion>=3 && isMask),"Unsupported asset format");
         auto& count=isMask ? maskPixelCount : pixelCount;
         count+=static_cast<std::uint64_t>(extent.width)*static_cast<std::uint64_t>(extent.height);
         require(count<=100000000,"Aggregate color or mask extents exceed 100 MP");
@@ -287,7 +306,7 @@ LoadedProject loadProject(const QString& path, TileStore& tiles, std::stop_token
     std::map<std::string,MaskRecord> maskRecords;
     Query masks(db,"SELECT uuid,asset_uuid,enabled,linked,transform,exterior_coverage FROM masks");
     while(masks.row()) {
-        cancelled(stop); require(formatVersion==3 && maskRecords.size()<10000,"Unsupported or excessive mask records");
+        cancelled(stop); require(formatVersion>=3 && maskRecords.size()<10000,"Unsupported or excessive mask records");
         const auto key=Id(masks.text(0)).text(),asset=Id(masks.text(1)).text();
         require(maskAssets.contains(asset),"Mask record must reference a coverage asset");
         const auto enabled=masks.integer(2);
@@ -299,6 +318,8 @@ LoadedProject loadProject(const QString& path, TileStore& tiles, std::stop_token
     std::vector<LayerNode> nodes;
     std::set<std::string> usedAssets;
     std::size_t jsonBytes=2;
+    std::map<std::string,std::string> adjustmentJson;
+    std::map<std::string,std::string> retouchJson;
     while(layers.row()) {
         cancelled(stop); require(nodes.size()<10000,"Excess layer count"); LayerNode node{Id(layers.text(0))};
         if(!layers.null(1)) node.parent=Id(layers.text(1));
@@ -318,14 +339,25 @@ LoadedProject loadProject(const QString& path, TileStore& tiles, std::stop_token
         if(parameters==layerParameters(node.folder,Sampling::Bilinear)) node.sampling=Sampling::Bilinear;
         else if(!node.folder && parameters==layerParameters(false,Sampling::Nearest)) node.sampling=Sampling::Nearest;
         else if(!node.folder && parameters==layerParameters(false,Sampling::Lanczos)) node.sampling=Sampling::Lanczos;
+        else if(formatVersion==6 && !node.folder && QJsonDocument::fromJson(QByteArray::fromStdString(parameters)).object().value("version").toInt(-1)==4) retouchJson.emplace(node.id.text(),parameters);
+        else if(formatVersion>=4 && !node.folder) adjustmentJson.emplace(node.id.text(),parameters);
         else fail("Unsupported layer parameters");
         if(node.folder) require(layers.null(9),"Folder must not have an asset");
         else {
             const auto key=Id(layers.text(9)).text(); const auto found=assetMap.find(key);
             require(found!=assetMap.end() && !maskAssets.contains(key),"Missing or wrong-kind layer asset"); node.raster=found->second; usedAssets.insert(key);
+            if(retouchJson.contains(node.id.text())) {
+                const auto stored=readRetouchParameters(parameters,node.raster);
+                require(!assetMap.contains(stored.intermediateId.text())&&!assetMap.contains(stored.renderedId.text()),"Retouch derived identity conflicts with stored asset");node.sampling=stored.sampling;
+            }
+            if(adjustmentJson.contains(node.id.text())) {
+                const auto stored=readAdjustmentParameters(parameters,node.raster,static_cast<int>(formatVersion));
+                require(!assetMap.contains(stored.renderedId.text()),"Derived raster identity conflicts with stored source or mask");
+                node.sampling=stored.sampling;
+            }
         }
         if(!layers.null(10)) {
-            require(formatVersion==3 && !node.folder,"Unsupported folder or legacy mask");
+            require(formatVersion>=3 && !node.folder,"Unsupported folder or legacy mask");
             const auto key=Id(layers.text(10)).text(); const auto found=maskRecords.find(key);
             require(found!=maskRecords.end(),"Missing layer mask");
             const auto asset=assetMap.at(found->second.asset);
@@ -391,6 +423,60 @@ LoadedProject loadProject(const QString& path, TileStore& tiles, std::stop_token
         if(node.raster) node.raster=assetMap.at(node.raster->id.text());
         if(node.mask) node.mask=assetMap.at(node.mask->id.text());
     }
+    std::map<std::string,std::pair<std::string,std::shared_ptr<const RasterSnapshot>>> renderedAssets;
+    std::map<std::string,std::shared_ptr<const RetouchStack>> retainedRetouchStacks;
+    for(auto& node:nodes) if(const auto found=retouchJson.find(node.id.text());found!=retouchJson.end()) {
+        cancelled(stop);auto stored=readRetouchParameters(found->second,node.raster);
+        RasterSnapshot metadata(stored.intermediateId,stored.stack.source->extent,stored.stack.source->defaultValue,{},stored.intermediateRevision,stored.stack.source->sourceProfile);
+        const auto intermediateKey=retouchParameters(stored.stack,metadata,nullptr,Sampling::Bilinear);
+        std::shared_ptr<const RasterSnapshot> intermediate;
+        if(const auto cached=renderedAssets.find(stored.intermediateId.text());cached!=renderedAssets.end()) {
+            require(cached->second.first==intermediateKey,"Conflicting retouch intermediate identity");intermediate=cached->second.second;
+        } else {
+            const auto computed=evaluateRetouchStack(stored.stack,tiles,stop);
+            intermediate=std::make_shared<const RasterSnapshot>(stored.intermediateId,computed->extent,computed->defaultValue,computed->tiles,stored.intermediateRevision,computed->sourceProfile);
+            renderedAssets.emplace(stored.intermediateId.text(),std::make_pair(intermediateKey,intermediate));
+        }
+        if(const auto retained=retainedRetouchStacks.find(stored.intermediateId.text());retained!=retainedRetouchStacks.end()) {
+            node.retouch=retained->second;
+        } else {
+            // Parsing is covered by worker scratch; retained vector capacity is
+            // charged independently for the entire immutable backing lifetime.
+            std::uint64_t bytes=sizeof(RetouchStack)+128;
+            bytes+=static_cast<std::uint64_t>(stored.stack.strokes.capacity())*sizeof(RetouchStroke);
+            for(const auto& stroke:stored.stack.strokes)
+                bytes+=static_cast<std::uint64_t>(stroke.points.capacity())*sizeof(Coordinate);
+            std::shared_ptr<MemoryAdmission::Reservation> charge;
+            if(tiles.memoryAdmission()) charge=std::make_shared<MemoryAdmission::Reservation>(tiles.memoryAdmission()->require(bytes));
+            auto ownedStack=std::shared_ptr<const RetouchStack>(new RetouchStack(std::move(stored.stack)),
+                [charge](const RetouchStack* stack){delete stack;});
+            if(charge) charge->commit();
+            node.retouch=ownedStack;
+            retainedRetouchStacks.emplace(stored.intermediateId.text(),std::move(ownedStack));
+        }
+        node.raster=intermediate;node.sampling=stored.sampling;
+        if(!stored.adjustment.empty()) {
+            adjustmentJson.emplace(node.id.text(),stored.adjustment);
+        }
+    }
+    for(auto& node:nodes) if(const auto found=adjustmentJson.find(node.id.text());found!=adjustmentJson.end()) {
+        cancelled(stop);
+        auto stored=readAdjustmentParameters(found->second,node.raster,static_cast<int>(formatVersion));
+        require(!assetMap.contains(stored.renderedId.text()),"Derived raster identity conflicts with stored source or mask");
+        RasterSnapshot cacheMetadata(stored.renderedId,stored.stack.source->extent,stored.stack.source->defaultValue,{},stored.renderedRevision,stored.stack.source->sourceProfile);
+        const auto cacheIdentity=adjustmentParameters(stored.stack,cacheMetadata,Sampling::Bilinear);
+        const auto cached=renderedAssets.find(stored.renderedId.text());
+        if(cached!=renderedAssets.end()) {
+            require(cached->second.first==cacheIdentity,"Conflicting derived raster parameters");
+            node.raster=cached->second.second;
+        } else {
+            const auto computed=evaluateAdjustmentStack(stored.stack,tiles,stop);
+            node.raster=std::make_shared<const RasterSnapshot>(stored.renderedId,computed->extent,computed->defaultValue,computed->tiles,stored.renderedRevision,computed->sourceProfile);
+            renderedAssets.emplace(stored.renderedId.text(),std::make_pair(cacheIdentity,node.raster));
+        }
+        node.sampling=stored.sampling;
+        node.adjustments=std::make_shared<const AdjustmentStack>(std::move(stored.stack));
+    }
     auto document=std::make_shared<const DocumentSnapshot>(docId,static_cast<int>(width),static_cast<int>(height),resolution,std::move(nodes),revision,selection);
     cancelled(stop); require(fileIdentity(path)==before,"Project changed during reading; retry");
     return {document,*before};
@@ -403,17 +489,36 @@ FileIdentity saveProject(const QString& requestedPath, const DocumentPtr& docume
     std::map<std::string,SavedMask> masks;
     std::set<std::string> maskAssets;
     std::uint64_t colorPixels=0,maskPixels=0;
+    std::map<std::string,std::string> derivedParameters;
+    std::map<std::string,std::string> serializedParameters;
+    std::size_t parameterBytes=2;
     const auto serializedSelection=selectionJson(document->selection,document->width,document->height);
     for(const auto& node:document->layers()) {
-        layerParameters(node.folder,node.sampling); // Validate before creating a replacement file.
+        cancelled(options.stop);
+        const auto parameters=node.retouch ? retouchParameters(*node.retouch,*node.raster,node.adjustments.get(),node.sampling) : node.adjustments ? adjustmentParameters(*node.adjustments,*node.raster,node.sampling) : layerParameters(node.folder,node.sampling);
+        require(parameters.size()<=4*1024*1024-parameterBytes,"Excess layer parameter bytes");
+        parameterBytes+=parameters.size();
+        serializedParameters.emplace(node.id.text(),parameters); // Validate before creating a replacement file.
         require(QString::fromUtf8(node.name).toUtf8().toStdString()==node.name,"Invalid UTF-8 layer name");
         require(!node.folder || !node.mask,"Folder masks are unsupported");
         if(!node.raster) continue;
-        const auto colorKey=node.raster->id.text();
+        const auto retained=node.retouch ? node.retouch->source : node.adjustments ? node.adjustments->source : node.raster;
+        if(node.retouch) {
+            const auto& intermediate=node.adjustments ? *node.adjustments->source : *node.raster;
+            const auto serialized=retouchParameters(*node.retouch,intermediate,nullptr,Sampling::Bilinear);
+            const auto [entry,inserted]=derivedParameters.emplace(intermediate.id.text(),serialized);
+            require(inserted||entry->second==serialized,"Conflicting retouch intermediate identity");
+        }
+        if(node.adjustments) {
+            const auto serialized=adjustmentParameters(*node.adjustments,*node.raster,Sampling::Bilinear);
+            const auto [entry,inserted]=derivedParameters.emplace(node.raster->id.text(),serialized);
+            require(inserted || entry->second==serialized,"Conflicting derived raster identities");
+        }
+        const auto colorKey=retained->id.text();
         require(!maskAssets.contains(colorKey),"Color and mask asset IDs conflict");
-        const auto [color,insertedColor]=assets.emplace(colorKey,node.raster);
-        require(insertedColor || color->second==node.raster,"Conflicting color asset versions");
-        if(insertedColor) colorPixels+=static_cast<std::uint64_t>(node.raster->extent.width)*static_cast<std::uint64_t>(node.raster->extent.height);
+        const auto [color,insertedColor]=assets.emplace(colorKey,retained);
+        require(insertedColor || color->second==retained,"Conflicting color asset versions");
+        if(insertedColor) colorPixels+=static_cast<std::uint64_t>(retained->extent.width)*static_cast<std::uint64_t>(retained->extent.height);
         if(node.mask) {
             const auto key=node.mask->id.text();
             require(node.mask->extent==node.raster->extent && !node.mask->sourceProfile,"Mask extent or profile is unsupported");
@@ -425,11 +530,12 @@ FileIdentity saveProject(const QString& requestedPath, const DocumentPtr& docume
             maskAssets.insert(key);
             if(insertedMask) maskPixels+=static_cast<std::uint64_t>(node.mask->extent.width)*static_cast<std::uint64_t>(node.mask->extent.height);
         }
-        if(const auto& profile=node.raster->sourceProfile) {
+        if(const auto& profile=retained->sourceProfile) {
             const auto [found,inserted]=profiles.emplace(profile->id.text(),profile);
             require(inserted || found->second->bytes==profile->bytes,"Conflicting source profile IDs");
         }
     }
+    for(const auto& [key,parameters]:derivedParameters) require(!assets.contains(key),"Derived raster identity conflicts with source or mask");
     require(profiles.size()<=16,"Too many source profiles");
     require(colorPixels<=100000000 && maskPixels<=100000000 && masks.size()<=10000 && assets.size()<=20000,"Aggregate color or mask asset limit exceeded");
     std::lock_guard guard(saveMutex); // Serializes this process; sidecar flock coordinates other writers.
@@ -455,7 +561,7 @@ FileIdentity saveProject(const QString& requestedPath, const DocumentPtr& docume
     {
         Db db(QFile::encodeName(temporary.fileName()),SQLITE_OPEN_READWRITE|SQLITE_OPEN_NOFOLLOW);
         db.exec("PRAGMA page_size=4096; PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON; PRAGMA cache_size=-4096; PRAGMA mmap_size=0");
-        db.exec(projectSchema); db.exec("PRAGMA user_version=3; BEGIN IMMEDIATE");
+        db.exec(projectSchemaV6); db.exec("PRAGMA user_version=6; BEGIN IMMEDIATE");
         {
             Query q(db,"INSERT INTO project(id,format,uuid,width,height,resolution,working_space,saved_revision,required_features_json,selection_json) VALUES(1,'compositor-linux',?,?,?,?,'linear-srgb-extended-v1',?,'[]',?)");
             q.text(1,document->id.text()); q.bind(2,document->width); q.bind(3,document->height); q.real(4,document->resolution); q.bind(5,document->revision); q.text(6,serializedSelection); q.end();
@@ -480,9 +586,9 @@ FileIdentity saveProject(const QString& requestedPath, const DocumentPtr& docume
             Query q(db,"INSERT INTO layers VALUES(?,?,?,?,?,?,?,?,?,?,?,NULL,?)");
             q.text(1,node.id.text()); if(node.parent) q.text(2,node.parent->text()); q.bind(3,node.siblingOrder); q.text(4,type);
             q.text(5,node.name); q.bind(6,node.visible ? 1 : 0); q.real(7,node.opacity); q.text(8,std::string(blendIdentifier(node.blend)));
-            q.blob(9,matrixBytes(node.localToDocument)); if(node.raster) q.text(10,node.raster->id.text());
+            q.blob(9,matrixBytes(node.localToDocument)); if(node.raster) q.text(10,(node.retouch ? node.retouch->source : node.adjustments ? node.adjustments->source : node.raster)->id.text());
             if(node.mask) q.text(11,node.id.text());
-            q.text(12,layerParameters(node.folder,node.sampling)); q.end();
+            q.text(12,serializedParameters.at(node.id.text())); q.end();
         }
         for(const auto& [key,asset]:assets) {
         const auto& raster=*asset;

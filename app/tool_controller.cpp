@@ -3,6 +3,7 @@
 #include <QAction>
 #include <QActionGroup>
 #include <QCheckBox>
+#include <QComboBox>
 #include <QColorDialog>
 #include <QDoubleSpinBox>
 #include <QKeyEvent>
@@ -41,6 +42,12 @@ QIcon toolIcon(int tool) {
             painter.save();painter.translate(12,12);painter.rotate(rotation);
             painter.drawLine(QPointF(-3,-6),QPointF(0,-9));painter.drawLine(QPointF(3,-6),QPointF(0,-9));painter.restore();
         }
+    } else if(tool==7) {
+        painter.drawEllipse(QRectF(8,3,8,8));painter.drawLine(QPointF(12,11),QPointF(12,16));
+        painter.drawRect(QRectF(5,16,14,5));
+    } else if(tool==8) {
+        painter.save();painter.translate(12,12);painter.rotate(-40);painter.drawRoundedRect(QRectF(-10,-4,20,8),3,3);
+        painter.drawRect(QRectF(-3,-3,6,6));painter.restore();
     } else if(tool==6) {
         painter.drawLine(QPointF(7,3),QPointF(7,17));painter.drawLine(QPointF(3,7),QPointF(17,7));
         painter.drawLine(QPointF(17,7),QPointF(17,21));painter.drawLine(QPointF(7,17),QPointF(21,17));
@@ -72,17 +79,17 @@ ToolController::ToolController(QWidget* parentWindow,Callbacks callbacks)
     brushToolbar_->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     brushToolbar_->setAllowedAreas(Qt::TopToolBarArea | Qt::BottomToolBarArea);brushToolbar_->setMovable(false);
     auto* group=new QActionGroup(this);group->setExclusive(true);
-    const char* names[]{"Brush","Erase","Move","Rectangle selection","Ellipse selection"};
-    const char* keys[]{"B","E","V","M",""};
-    const char* objects[]{"toolBrush","toolErase","toolMove","toolRectangleSelection","toolEllipseSelection"};
-    for(int i=0;i<5;++i) {
-        auto* action=new QAction(toolIcon(i),names[i],toolbar_);action->setObjectName(objects[i]);action->setCheckable(true);
+    const char* names[]{"Brush","Erase","Move","Rectangle selection","Ellipse selection","Clone","Heal"};
+    const char* keys[]{"B","E","V","M","","S","J"};
+    const char* objects[]{"toolBrush","toolErase","toolMove","toolRectangleSelection","toolEllipseSelection","toolClone","toolHeal"};
+    for(int i=0;i<7;++i) {
+        auto* action=new QAction(toolIcon(i>=5 ? i+2 : i),names[i],toolbar_);action->setObjectName(objects[i]);action->setCheckable(true);
         action->setToolTip(*keys[i] ? QString("%1 (%2)").arg(names[i],keys[i]) : QString(names[i]));group->addAction(action);
         if(*keys[i]) action->setShortcut(QKeySequence(keys[i]));
         modeActions_.push_back(action);
         connect(action,&QAction::triggered,this,[this,i]{setMode(static_cast<Mode>(i));});
     }
-    for(int index:{2,3,4,0,1}) toolbar_->addAction(modeActions_[index]);
+    for(int index:{2,3,4,0,1,5,6}) toolbar_->addAction(modeActions_[index]);
     modeActions_[0]->setChecked(true);
     toolLabel_=new QLabel(brushToolbar_);toolLabel_->setObjectName("optionsToolLabel");brushToolbar_->addWidget(toolLabel_);
     brushToolbar_->addSeparator();
@@ -102,6 +109,23 @@ ToolController::ToolController(QWidget* parentWindow,Callbacks callbacks)
     paintMask_=new QCheckBox("Paint mask",brushToolbar_);paintMask_->setObjectName("paintMask");
     paintMask_->setAccessibleName("Paint layer mask");paintMask_->setToolTip("Paint the layer mask instead of color pixels");
     brushOptions_.push_back(brushToolbar_->addWidget(paintMask_));
+    maskMode_=new QComboBox(brushToolbar_);maskMode_->setObjectName("maskPaintMode");
+    maskMode_->addItems({"Reveal (white)","Conceal (black)"});maskMode_->setAccessibleName("Mask paint coverage");
+    maskMode_->setToolTip("Reveal adds mask coverage; conceal removes it. Erase always conceals.");
+    maskModeOption_=brushToolbar_->addWidget(maskMode_);brushOptions_.push_back(maskModeOption_);
+    connect(paintMask_,&QCheckBox::toggled,this,[this] {
+        cancel();if(!paintTargetAvailable() && (mode_==Mode::Brush || mode_==Mode::Erase)) setMode(Mode::RectangleSelection);
+        updateOptions();
+    });
+    connect(maskMode_,qOverload<int>(&QComboBox::currentIndexChanged),this,[this]{cancel();});
+    retouchHintLabel_=new QLabel("Alt+click to set source",brushToolbar_);retouchHintLabel_->setObjectName("retouchSourceHint");
+    retouchHint_=brushToolbar_->addWidget(retouchHintLabel_);
+    retouchRadiusLabel_=brushToolbar_->addWidget(new QLabel("Heal radius",brushToolbar_));
+    retouchRadius_=new QDoubleSpinBox(brushToolbar_);retouchRadius_->setObjectName("retouchRadius");retouchRadius_->setRange(1,32);
+    retouchRadius_->setDecimals(0);retouchRadius_->setValue(8);retouchRadius_->setSuffix(" px");retouchRadius_->setMaximumWidth(86);
+    retouchRadius_->setAccessibleName("Healing neighborhood radius in pixels");retouchRadius_->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    retouchRadiusOption_=brushToolbar_->addWidget(retouchRadius_);
+    connect(retouchRadius_,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this]{cancel();});
     moveHint_=brushToolbar_->addWidget(new QLabel("Drag to move layer",brushToolbar_));
     for(int index:{3,4}) {
         auto* button=new QToolButton(brushToolbar_);button->setDefaultAction(modeActions_[index]);button->setToolButtonStyle(Qt::ToolButtonIconOnly);
@@ -130,8 +154,8 @@ ToolController::ToolController(QWidget* parentWindow,Callbacks callbacks)
         connect(action,&QAction::triggered,this,callback);shortcutActions_.push_back(action);
     };
     shortcut("swapForegroundBackground","X",[this]{swapColors();});shortcut("defaultForegroundBackground","D",[this]{resetColors();});
-    shortcut("decreaseBrushSize","[",[this]{if(mode_==Mode::Brush || mode_==Mode::Erase) {cancel();diameter_->setValue(diameter_->value()-1);}});
-    shortcut("increaseBrushSize","]",[this]{if(mode_==Mode::Brush || mode_==Mode::Erase) {cancel();diameter_->setValue(diameter_->value()+1);}});
+    shortcut("decreaseBrushSize","[",[this]{if(mode_==Mode::Brush || mode_==Mode::Erase || mode_==Mode::Clone || mode_==Mode::Heal) {cancel();diameter_->setValue(diameter_->value()-1);}});
+    shortcut("increaseBrushSize","]",[this]{if(mode_==Mode::Brush || mode_==Mode::Erase || mode_==Mode::Clone || mode_==Mode::Heal) {cancel();diameter_->setValue(diameter_->value()+1);}});
     connect(diameter_,qOverload<double>(&QDoubleSpinBox::valueChanged),this,[this]{updateBrushCursor();});
     updateSwatches();updateOptions();setEnabled(false);
 }
@@ -151,18 +175,27 @@ void ToolController::swapColors() {
 }
 void ToolController::resetColors() {background_=Qt::white;setForegroundColor(Qt::black);updateSwatches();}
 void ToolController::updateBrushCursor() {
-    if(canvas_) canvas_->setBrushCursor(diameter_->value(),enabled_ && rasterAvailable_ && bool(document_) &&
-        (mode_==Mode::Brush || mode_==Mode::Erase) && !space_ && !canvas_->spaceHeld());
+    const bool retouch=mode_==Mode::Clone || mode_==Mode::Heal;
+    if(canvas_) canvas_->setBrushCursor(diameter_->value(),enabled_ && (retouch ? rasterAvailable_ : paintTargetAvailable()) && bool(document_) &&
+        (mode_==Mode::Brush || mode_==Mode::Erase || retouch) && !space_ && !canvas_->spaceHeld());
 }
 void ToolController::updateOptions() {
     const bool ready=enabled_ && bool(document_);
+    const bool retouch=mode_==Mode::Clone || mode_==Mode::Heal;
+    const bool paintAvailable=retouch ? rasterAvailable_ : paintTargetAvailable();
+    modeActions_[0]->setEnabled(paintTargetAvailable());modeActions_[1]->setEnabled(paintTargetAvailable());
+    modeActions_[2]->setEnabled(rasterAvailable_);
+    modeActions_[5]->setEnabled(rasterAvailable_);modeActions_[6]->setEnabled(rasterAvailable_);
+    diameter_->setEnabled(paintAvailable);hardness_->setEnabled(paintAvailable);opacity_->setEnabled(paintAvailable);
+    colorAction_->setEnabled(rasterAvailable_ && colorPixelsAvailable_ && !paintMask_->isChecked());
+    paintMask_->setEnabled(rasterAvailable_ && maskAvailable_ && colorPixelsAvailable_);
     if(transformCommand_) transformCommand_->setEnabled(ready && rasterAvailable_);
     if(cropCommand_) cropCommand_->setEnabled(ready);
     if(deselectCommand_) deselectCommand_->setEnabled(ready && selection_.has_value());
     if(invertCommand_) invertCommand_->setEnabled(ready && selection_.has_value());
-    const bool painting=mode_==Mode::Brush || mode_==Mode::Erase;
+    const bool painting=mode_==Mode::Brush || mode_==Mode::Erase || retouch;
     const bool selection=mode_==Mode::RectangleSelection || mode_==Mode::EllipseSelection;
-    const char* names[]{"Brush","Erase","Move","Rectangle selection","Ellipse selection"};toolLabel_->setText(names[static_cast<int>(mode_)]);
+    const char* names[]{"Brush","Erase","Move","Rectangle selection","Ellipse selection","Clone","Heal"};toolLabel_->setText(names[static_cast<int>(mode_)]);
     const auto showOption=[this](QAction* action,bool visible) {
         action->setVisible(visible);
         // Qt applies toolbar layout changes later. Keep the actual option
@@ -170,6 +203,17 @@ void ToolController::updateOptions() {
         if(auto* widget=brushToolbar_->widgetForAction(action)) widget->setVisible(visible);
     };
     for(auto* action:brushOptions_) showOption(action,painting);
+    showOption(colorAction_,painting && !retouch);
+    for(auto* action:brushOptions_) {
+        auto* widget=brushToolbar_->widgetForAction(action);
+        if(widget==paintMask_) {
+            action->setEnabled(rasterAvailable_ && maskAvailable_ && colorPixelsAvailable_);
+            showOption(action,painting && !retouch);
+        } else if(widget==diameter_ || widget==hardness_ || widget==opacity_) action->setEnabled(paintAvailable);
+    }
+    showOption(maskModeOption_,painting && paintMask_->isChecked() && mode_==Mode::Brush);
+    showOption(retouchHint_,retouch);showOption(retouchRadiusLabel_,mode_==Mode::Heal);showOption(retouchRadiusOption_,mode_==Mode::Heal);
+    retouchHintLabel_->setText(sourceAnchor_ ? QString("Source: %1, %2 · Alt+click to change").arg(sourceAnchor_->x).arg(sourceAnchor_->y) : "Alt+click to set source");
     showOption(moveHint_,mode_==Mode::Move);if(transformOption_) showOption(transformOption_,mode_==Mode::Move);
     for(auto* action:selectionOptions_) showOption(action,selection);
     for(std::size_t i=0;i<shortcutActions_.size();++i) shortcutActions_[i]->setEnabled(enabled_ && (i<2 || (painting && rasterAvailable_)));
@@ -191,7 +235,7 @@ void ToolController::bindCommandActions(QAction* transform,QAction* crop,QAction
 ToolController::~ToolController() {cancel();if(canvas_) {canvas_->setBrushCursor(diameter_->value(),false);canvas_->removeEventFilter(this);}}
 void ToolController::attach(Canvas* canvas) {
     if(canvas_==canvas) return;
-    cancel();if(canvas_) {canvas_->setBrushCursor(diameter_->value(),false);canvas_->removeEventFilter(this);}
+    cancel();sourceAnchor_.reset();if(canvas_) {canvas_->setBrushCursor(diameter_->value(),false);canvas_->removeEventFilter(this);}
     canvas_=canvas;space_=false;
     if(canvas_) canvas_->installEventFilter(this);
     updateBrushCursor();
@@ -199,18 +243,34 @@ void ToolController::attach(Canvas* canvas) {
 void ToolController::setEnabled(bool enabled) {enabled_=enabled;toolbar_->setEnabled(enabled);brushToolbar_->setEnabled(enabled);if(!enabled) cancel();updateOptions();}
 void ToolController::setRasterTargetAvailable(bool available) {
     rasterAvailable_=available;
-    for(std::size_t i=0;i<3;++i) modeActions_[i]->setEnabled(available);
-    diameter_->setEnabled(available);hardness_->setEnabled(available);opacity_->setEnabled(available);
-    colorAction_->setEnabled(available);paintMask_->setEnabled(available);
-    if(!available && (mode_==Mode::Brush || mode_==Mode::Erase || mode_==Mode::Move))
+    if(!available && (mode_==Mode::Brush || mode_==Mode::Erase || mode_==Mode::Move || mode_==Mode::Clone || mode_==Mode::Heal))
         setMode(Mode::RectangleSelection);
     updateOptions();
 }
-void ToolController::setDocument(engine::DocumentPtr document) {if(document_!=document) cancel();document_=std::move(document);updateOptions();}
+bool ToolController::paintTargetAvailable() const {
+    return rasterAvailable_ && (paintMask_->isChecked() ? maskAvailable_ : colorPixelsAvailable_);
+}
+void ToolController::setPaintTargetsAvailable(bool colorPixels,bool layerMask) {
+    if(colorPixelsAvailable_==colorPixels && maskAvailable_==layerMask) {updateOptions();return;}
+    cancel();colorPixelsAvailable_=colorPixels;maskAvailable_=layerMask;
+    if(!colorPixels && layerMask) paintMask_->setChecked(true);
+    else if(colorPixels && !layerMask) paintMask_->setChecked(false);
+    if(!paintTargetAvailable() && (mode_==Mode::Brush || mode_==Mode::Erase)) setMode(Mode::RectangleSelection);
+    updateOptions();
+}
+void ToolController::setDocument(engine::DocumentPtr document) {
+    if(document_!=document) cancel();
+    if(!document || !document_ || document->id!=document_->id) sourceAnchor_.reset();
+    document_=std::move(document);updateOptions();
+}
+void ToolController::setRetouchTarget(std::optional<engine::Id> target) {
+    if(retouchTarget_==target) return;
+    cancel();retouchTarget_=std::move(target);sourceAnchor_.reset();updateOptions();
+}
 void ToolController::setSelection(std::optional<engine::Selection> selection) {selection_=std::move(selection);updateOptions();}
 void ToolController::setMaskContext(bool paintingMask) {paintMask_->setChecked(paintingMask);}
 void ToolController::setMode(Mode mode) {
-    if(!rasterAvailable_ && (mode==Mode::Brush || mode==Mode::Erase || mode==Mode::Move)) mode=Mode::RectangleSelection;
+    if((!paintTargetAvailable() && (mode==Mode::Brush || mode==Mode::Erase)) || (!rasterAvailable_ && (mode==Mode::Move || mode==Mode::Clone || mode==Mode::Heal))) mode=Mode::RectangleSelection;
     cancel();mode_=mode;modeActions_.at(static_cast<std::size_t>(mode))->setChecked(true);updateOptions();
 }
 engine::Coordinate ToolController::position(QPointF logical) const {
@@ -233,6 +293,9 @@ void ToolController::append(engine::Coordinate point) {
         error("Stroke exceeds 8192 points. Release the pointer and draw a shorter stroke.");return;
     }
     points_.push_back(point);
+    // Retouch samples source pixels in the worker; a foreground-color overlay
+    // would misrepresent that result. The brush outline still follows input.
+    if(mode_==Mode::Clone || mode_==Mode::Heal) return;
     const engine::Pixel encoded{float(foreground_.redF()),float(foreground_.greenF()),float(foreground_.blueF()),float(opacity_->value()/100)};
     canvas_->setStrokePreview(points_,encoded,diameter_->value(),mode_==Mode::Erase);
 }
@@ -240,12 +303,18 @@ engine::BrushSettings ToolController::settings() const {
     engine::BrushSettings brush;
     brush.diameter=diameter_->value();brush.hardness=hardness_->value()/100;brush.opacity=opacity_->value()/100;
     brush.color={float(foreground_.redF()),float(foreground_.greenF()),float(foreground_.blueF()),1};
-    brush.erasing=mode_==Mode::Erase;brush.paintMask=paintMask_->isChecked();return brush;
+    brush.erasing=mode_==Mode::Erase;brush.paintMask=paintMask_->isChecked();
+    if(brush.paintMask) {const float coverage=brush.erasing || maskMode_->currentIndex()==1 ? 0.f : 1.f;brush.color={coverage,coverage,coverage,1};}
+    return brush;
 }
 void ToolController::release(engine::Coordinate point) {
-    if(mode_==Mode::Brush || mode_==Mode::Erase) {
+    if(mode_==Mode::Brush || mode_==Mode::Erase || mode_==Mode::Clone || mode_==Mode::Heal) {
         append(point);const bool rejected=rejected_;auto stroke=std::move(points_);const auto brush=settings();cancel();
-        if(!rejected && !stroke.empty() && callbacks_.onStroke) callbacks_.onStroke(std::move(stroke),brush);
+        if(mode_==Mode::Clone || mode_==Mode::Heal) {
+            auto retouchSettings=brush;retouchSettings.paintMask=false;retouchSettings.erasing=false;
+            if(!rejected && !stroke.empty() && sourceAnchor_ && callbacks_.onRetouch)
+                callbacks_.onRetouch(std::move(stroke),retouchSettings,*sourceAnchor_,mode_==Mode::Heal,retouchRadius_->value());
+        } else if(!rejected && !stroke.empty() && callbacks_.onStroke) callbacks_.onStroke(std::move(stroke),brush);
     } else if(mode_==Mode::Move) {
         engine::TransformParameters transform;transform.dx=point.x-anchor_.x;transform.dy=point.y-anchor_.y;cancel();
         if((transform.dx!=0 || transform.dy!=0) && callbacks_.onMove) callbacks_.onMove(transform);
@@ -287,14 +356,24 @@ bool ToolController::eventFilter(QObject* watched,QEvent* event) {
                 if(mouse->button()==Qt::MiddleButton || space_ || canvas_->spaceHeld()) cancel();
                 return false;
             }
+            if(mode_==Mode::Clone || mode_==Mode::Heal) {
+                if(mouse->modifiers().testFlag(Qt::AltModifier)) {
+                    cancel();const auto source=position(mouse->position());
+                    if(source.x<0 || source.y<0 || source.x>=document_->width || source.y>=document_->height) {
+                        error("Choose a retouch source inside the image.");mouse->accept();return true;
+                    }
+                    sourceAnchor_=source;updateOptions();mouse->accept();return true;
+                }
+                if(!sourceAnchor_) {error("Alt+click the image to choose a retouch source first.");mouse->accept();return true;}
+            }
             canvas_->activateCanvas();anchor_=position(mouse->position());dragging_=true;rejected_=false;points_.clear();
             canvas_->setMouseGrabEnabled(true);
-            if(mode_==Mode::Brush || mode_==Mode::Erase) append(anchor_);
+            if(mode_==Mode::Brush || mode_==Mode::Erase || mode_==Mode::Clone || mode_==Mode::Heal) append(anchor_);
             mouse->accept();return true;
         }
         if(event->type()==QEvent::MouseMove && dragging_) {
             auto* mouse=static_cast<QMouseEvent*>(event);
-            if(mode_==Mode::Brush || mode_==Mode::Erase) append(position(mouse->position()));
+            if(mode_==Mode::Brush || mode_==Mode::Erase || mode_==Mode::Clone || mode_==Mode::Heal) append(position(mouse->position()));
             mouse->accept();return true;
         }
         if(event->type()==QEvent::MouseButtonRelease && dragging_) {

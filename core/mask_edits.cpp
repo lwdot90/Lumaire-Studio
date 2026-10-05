@@ -35,8 +35,14 @@ Roi sourceRoi(const Extent& source,const Selection& selection,const Affine& tran
     const auto& box=selection.bounds;
     if(!box.width || !box.height) return {};
     const auto inverse=transform.inverse();
-    const double left=static_cast<double>(box.x),top=static_cast<double>(box.y);
-    const double right=left+static_cast<double>(box.width),bottom=top+static_cast<double>(box.height);
+    double paddingX=selection.featherRadius,paddingY=paddingX;
+    if(selection.shape==SelectionShape::Ellipse && paddingX>0) {
+        const double minimum=static_cast<double>(std::min(box.width,box.height));
+        paddingX*=static_cast<double>(box.width)/minimum;
+        paddingY*=static_cast<double>(box.height)/minimum;
+    }
+    const double left=static_cast<double>(box.x)-paddingX,top=static_cast<double>(box.y)-paddingY;
+    const double right=static_cast<double>(box.x+box.width)+paddingX,bottom=static_cast<double>(box.y+box.height)+paddingY;
     double minX=std::numeric_limits<double>::infinity(),minY=minX,maxX=-minX,maxY=-minX;
     for(const auto point:std::array{Coordinate{left,top},Coordinate{right,top},Coordinate{left,bottom},Coordinate{right,bottom}}) {
         const auto mapped=inverse.map(point);

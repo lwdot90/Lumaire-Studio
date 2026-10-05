@@ -1,6 +1,12 @@
 #include "app/editing_menus.h"
+#include "core/soft_mask_edits.h"
+#include "core/image_resize.h"
+#include "core/retouch.h"
 #include "app/color_panel.h"
 #include "app/job_progress_widget.h"
+#include "app/revisable_exposure_dialog.h"
+#include "app/revisable_adjustments_dialog.h"
+#include "app/adjustment_preview.h"
 #include "app/application_icon.h"
 #include "app/editor_theme.h"
 #include "app/panel_icons.h"
@@ -107,11 +113,12 @@ MainWindow::MainWindow(QVulkanInstance* instance,bool cpu,QString deviceName,std
         [this](auto points,auto settings){applyStroke(std::move(points),settings);},
         [this](auto selection){setSelectionCurrent(std::move(selection));},
         [this](auto transform){transformCurrent(transform);},
-        [this](QString error){statusBar()->showMessage(error);diagnostics_->appendPlainText(error);}
+        [this](QString error){statusBar()->showMessage(error);diagnostics_->appendPlainText(error);},
+        [this](auto points,auto settings,auto anchor,bool heal,double radius){applyRetouchStroke(std::move(points),settings,anchor,heal,radius);}
     });
     tools_->setMode(ToolController::Mode::Move);
     addToolBar(Qt::LeftToolBarArea,tools_->toolbar());
-    for(const auto* name:{"toolBrush","toolErase"}) if(auto* action=findChild<QAction*>(name)) connect(action,&QAction::triggered,this,[this]{if(auto* canvas=currentCanvas();canvas && !canvas->cpu()) canvas->forceCpu("Interactive painting uses the CPU editor");});
+    for(const auto* name:{"toolBrush","toolErase","toolClone","toolHeal"}) if(auto* action=findChild<QAction*>(name)) connect(action,&QAction::triggered,this,[this]{if(auto* canvas=currentCanvas();canvas && !canvas->cpu()) canvas->forceCpu("Interactive painting uses the CPU editor");});
     installEditingMenus(*this);
     tools_->bindCommandActions(findChild<QAction*>("transformLayerAction"),findChild<QAction*>("cropDocumentAction"),
         findChild<QAction*>("deselectAction"),findChild<QAction*>("invertSelectionAction"));
@@ -260,6 +267,7 @@ MainWindow::MainWindow(QVulkanInstance* instance,bool cpu,QString deviceName,std
         if(found==sessions_.end() || !found->second->busy) return;
         found->second->stop.request_stop();progress->setState(true,true);
         statusBar()->showMessage("Cancelling current operation…");
+        emit editingContextChanged();
     });
     zoomInfo_=new QLabel("100%",this);zoomInfo_->setMinimumWidth(48);zoomInfo_->setAlignment(Qt::AlignCenter);
     statusBar()->addPermanentWidget(zoomInfo_);
@@ -383,7 +391,7 @@ void MainWindow::selectLayer(const engine::Id& id) {
     parent_->setEnabled(true); parent_->setCurrentIndex(parent_->findData(node.parent ? QString::fromStdString(node.parent->text()) : QString{}));
     // Target selection changes tool/menu availability without rebuilding the
     // layer tree or requesting another image render.
-    if(tools_) tools_->setRasterTargetAvailable(!node.folder);
+    if(tools_) {tools_->setRasterTargetAvailable(!node.folder);tools_->setRetouchTarget(id);tools_->setPaintTargetsAvailable(!node.folder && !node.adjustments && !node.retouch,!node.folder && node.mask && node.maskEnabled);}
     emit editingContextChanged();
 }
 void MainWindow::commitLayers(std::vector<engine::LayerNode> nodes,const std::string& name,std::optional<engine::Id> selected) {
@@ -502,7 +510,15 @@ void MainWindow::refresh(QWidget* page,bool fitView) {
     tabs_->setTabText(tabs_->indexOf(page),session.title+(session.history->dirty() ? " *" : "")+(session.busy ? " …" : ""));
     if(session.imageActive) if(auto* canvas=page->property("canvas").value<Canvas*>()) canvas->setDocument(document,fitView);
     if(page==tabs_->currentWidget()) {
-        if(tools_) {tools_->attach(currentCanvas());tools_->setDocument(document);tools_->setSelection(document->selection);tools_->setEnabled(!session.busy);tools_->setRasterTargetAvailable(selected && !document->layer(*selected).folder);if(auto* canvas=currentCanvas();canvas && !canvas->cpu() && (tools_->mode()==ToolController::Mode::Brush || tools_->mode()==ToolController::Mode::Erase)) canvas->forceCpu("Interactive painting uses the CPU editor");}
+        if(tools_) {
+            tools_->attach(currentCanvas());tools_->setDocument(document);tools_->setSelection(document->selection);
+            tools_->setEnabled(!session.busy);tools_->setRasterTargetAvailable(selected && !document->layer(*selected).folder);tools_->setRetouchTarget(selected);
+            const bool raster=selected && !document->layer(*selected).folder;
+            tools_->setPaintTargetsAvailable(raster && !document->layer(*selected).adjustments && !document->layer(*selected).retouch,
+                raster && document->layer(*selected).mask && document->layer(*selected).maskEnabled);
+            if(auto* canvas=currentCanvas();canvas && !canvas->cpu() && (tools_->mode()==ToolController::Mode::Brush || tools_->mode()==ToolController::Mode::Erase || tools_->mode()==ToolController::Mode::Clone || tools_->mode()==ToolController::Mode::Heal))
+                canvas->forceCpu("Interactive painting uses the CPU editor");
+        }
         undoAction_->setEnabled(!session.busy && session.history->canUndo()); redoAction_->setEnabled(!session.busy && session.history->canRedo());
         const auto name=session.history->undoName(); undoAction_->setText(name.empty() ? "&Undo" : "&Undo "+QString::fromUtf8(name.data(),static_cast<qsizetype>(name.size())));
         layerInfo_->setText(QString("%1 × %2 px · %3 ppi").arg(document->width).arg(document->height).arg(document->resolution));
@@ -563,7 +579,7 @@ void MainWindow::runJob(QWidget* page,std::function<JobResult(std::stop_token)> 
             // Initial allowance for graph/SQLite/zstd/fill scratch. Import has
             // separate encoded/decode reservations; final library peaks still
             // require measurement, not inference from these configured limits.
-            auto memory=resources->memory->require(16*1024*1024);
+            auto memory=resources->memory->require(64*1024*1024);
             return task(stop);
         } catch(const std::exception& error) { JobResult result; result.error=QString::fromUtf8(error.what()); return result; }
     }));
@@ -626,17 +642,149 @@ void MainWindow::runEdit(std::string name,std::function<engine::EditTransaction(
     },[session,name](const JobResult& result){session->history->commit(*result.edit,name);session->imageActive=true;});
 }
 void MainWindow::applyStroke(std::vector<engine::Coordinate> points,engine::BrushSettings settings) {
-    runEdit(settings.paintMask ? "Paint mask" : settings.erasing ? "Erase" : "Brush stroke",[tiles=tileStore_,points=std::move(points),settings](auto input,auto target,auto stop){if(!target) throw std::invalid_argument("Select a raster layer");return engine::brushStroke(input,*target,*tiles,points,settings,stop);});
+    runEdit(settings.paintMask ? "Paint mask" : settings.erasing ? "Erase" : "Brush stroke",[tiles=tileStore_,points=std::move(points),settings](auto input,auto target,auto stop){if(!target) throw std::invalid_argument("Select a raster layer");if(settings.paintMask) return engine::paintLayerMask(input,*target,*tiles,points,settings,!settings.erasing && settings.color.r>=.5f,stop);return engine::brushStroke(input,*target,*tiles,points,settings,stop);});
+}
+void MainWindow::applyRetouchStroke(std::vector<engine::Coordinate> points,engine::BrushSettings settings,engine::Coordinate anchor,bool heal,double radius) {
+    runEdit(heal ? "Healing stroke" : "Clone stroke",[tiles=tileStore_,points=std::move(points),settings,anchor,heal,radius](auto input,auto target,auto stop){
+        if(!target) throw std::invalid_argument("Select a raster layer");
+        const auto& layer=input->layer(*target);
+        engine::RetouchStroke stroke;stroke.kind=heal ? engine::RetouchKind::Heal : engine::RetouchKind::Clone;
+        stroke.sourceAnchor=anchor;stroke.points=points;stroke.diameter=settings.diameter;stroke.hardness=settings.hardness;stroke.opacity=settings.opacity;stroke.healingRadius=radius;
+        stroke.localToDocument=layer.localToDocument;stroke.selection=input->selection;stroke.canvasWidth=input->width;stroke.canvasHeight=input->height;
+        auto strokes=layer.retouch ? layer.retouch->strokes : std::vector<engine::RetouchStroke>{};strokes.push_back(std::move(stroke));
+        return engine::setRetouchStrokes(input,*target,*tiles,std::move(strokes),stop);
+    });
+}
+void MainWindow::reviseRetouchStrength(std::size_t index,double opacity) {
+    runEdit("Revise retouch strength",[tiles=tileStore_,index,opacity](auto input,auto target,auto stop){
+        if(!target || !input->layer(*target).retouch) throw std::invalid_argument("Select a retouched layer");
+        auto strokes=input->layer(*target).retouch->strokes;if(index>=strokes.size()) throw std::out_of_range("Retouch stroke index");strokes[index].opacity=opacity;
+        return engine::setRetouchStrokes(input,*target,*tiles,std::move(strokes),stop);
+    });
 }
 void MainWindow::transformCurrent(engine::TransformParameters parameters) {
     runEdit("Transform layer",[parameters](auto input,auto target,auto){if(!target) throw std::invalid_argument("Select a raster layer");return engine::transformLayer(input,*target,parameters);});
 }
 void MainWindow::cropCurrent(engine::Extent bounds) {runEdit("Crop canvas",[bounds](auto input,auto,auto){return engine::cropDocument(input,bounds);});}
+void MainWindow::resampleCurrent(int width,int height,engine::Sampling sampling) {runEdit("Resample image",[tiles=tileStore_,width,height,sampling](auto input,auto,auto stop){return engine::resampleDocument(input,*tiles,width,height,sampling,stop);});}
+void MainWindow::featherMaskCurrent(double radius) {runEdit("Feather layer mask",[tiles=tileStore_,radius](auto input,auto target,auto stop){if(!target) throw std::invalid_argument("Select a raster layer");return engine::featherLayerMask(input,*target,*tiles,radius,stop);});}
 void MainWindow::resizeCurrent(int width,int height) {runEdit("Resize image",[width,height](auto input,auto,auto){return engine::resizeDocument(input,width,height);});}
 void MainWindow::setSelectionCurrent(std::optional<engine::Selection> selection) {runEdit("Change selection",[selection](auto input,auto,auto){return engine::selectDocument(input,selection);});}
 void MainWindow::createMaskCurrent(bool fromSelection) {runEdit("Create layer mask",[tiles=tileStore_,fromSelection](auto input,auto target,auto stop){if(!target) throw std::invalid_argument("Select a raster layer");return engine::createLayerMask(input,*target,*tiles,fromSelection,stop);});}
 void MainWindow::removeMaskCurrent() {runEdit("Remove layer mask",[](auto input,auto target,auto){if(!target) throw std::invalid_argument("Select a raster layer");return engine::removeLayerMask(input,*target);});}
 void MainWindow::enableMaskCurrent(bool enabled) {runEdit("Toggle layer mask",[enabled](auto input,auto target,auto){if(!target) throw std::invalid_argument("Select a raster layer");return engine::setLayerMaskEnabled(input,*target,enabled);});}
+void MainWindow::rasterizeCurrentAdjustments() {
+    runEdit("Rasterize retained edits",[](auto input,auto target,auto) {
+        if(!target) throw std::invalid_argument("Select a raster layer");
+        return engine::rasterizeLayerAdjustments(input,*target);
+    });
+}
+void MainWindow::editRevisableExposure() {
+    if(currentBusy() || !currentDocument() || !activeLayer()) return;
+    auto* page=tabs_->currentWidget();const auto session=sessions_.at(page);
+    const auto input=session->history->current();const auto target=*session->history->selectedLayer();
+    const auto& layer=input->layer(target);if(layer.folder || !layer.raster) return;
+    double initial=0;
+    if(layer.adjustments) {
+        const auto& operations=layer.adjustments->operations;
+        if(operations.size()!=1 || operations.front().kind!=engine::AdjustmentKind::Exposure) {
+            statusBar()->showMessage("This adjustment stack cannot be revised with the Exposure dialog");return;
+        }
+        initial=operations.front().value;
+    }
+    RevisableExposureDialog dialog(initial,this);
+    AdjustmentPreview preview(resources_,&jobs_,&dialog);
+    std::shared_ptr<engine::EditTransaction> latest;
+    session->busy=true;session->stop=std::stop_source{};refresh(page);
+    const auto valid=[&] {
+        const auto found=sessions_.find(page);
+        return found!=sessions_.end() && found->second==session && tabs_->currentWidget()==page &&
+            session->history->current()==input && session->history->selectedLayer()==target && !session->stop.stop_requested();
+    };
+    const auto request=[&](double value) {
+        latest.reset();dialog.setPreviewState(true);
+        if(!valid()) {preview.cancel();dialog.reject();return;}
+        engine::AdjustmentParameters operation;operation.kind=engine::AdjustmentKind::Exposure;operation.value=value;
+        preview.request(input,target,{operation});
+    };
+    connect(&dialog,&RevisableExposureDialog::exposureChanged,&dialog,request);
+    connect(&preview,&AdjustmentPreview::previewReady,&dialog,[&](engine::DocumentPtr document,std::shared_ptr<engine::EditTransaction> edit,engine::RgbHistogram histogram) {
+        if(!valid()) {preview.cancel();dialog.reject();return;}
+        latest=std::move(edit);
+        if(auto* canvas=page->property("canvas").value<Canvas*>()) canvas->setDocument(std::move(document),false);
+        dialog.setHistogram(histogram);dialog.setPreviewState(false);
+    });
+    connect(&preview,&AdjustmentPreview::failed,&dialog,[&](const QString& error) {
+        latest.reset();dialog.setPreviewState(false,error);
+        diagnostics_->appendPlainText(error);
+    });
+    connect(&dialog,&QDialog::finished,&preview,[&]{preview.cancel();});
+    connect(this,&MainWindow::editingContextChanged,&dialog,[&]{if(!valid()){preview.cancel();dialog.reject();}});
+    request(initial);
+    const bool accepted=dialog.exec()==QDialog::Accepted;
+    preview.cancel();
+    bool committed=false;
+    if(accepted && latest && valid()) {
+        try {committed=session->history->commit(*latest,"Revisable Exposure",target);session->imageActive=true;}
+        catch(const std::exception& error) {const auto message=QString::fromUtf8(error.what());diagnostics_->appendPlainText(message);statusBar()->showMessage(message);emit operationFinished(false,message);}
+    }
+    session->busy=false;
+    if(sessions_.contains(page) && sessions_.at(page)==session) {
+        if(auto* canvas=page->property("canvas").value<Canvas*>()) canvas->setDocument(session->history->current(),false);
+        refresh(page);
+    }
+    if(committed) {statusBar()->showMessage("Revisable Exposure");emit operationFinished(true,"Revisable Exposure");}
+}
+void MainWindow::editRevisableAdjustments() {
+    if(currentBusy() || !currentDocument() || !activeLayer()) return;
+    auto* page=tabs_->currentWidget();const auto session=sessions_.at(page);
+    const auto input=session->history->current();const auto target=*session->history->selectedLayer();
+    const auto& layer=input->layer(target);if(layer.folder || !layer.raster) return;
+    std::vector<engine::AdjustmentParameters> initial;
+    if(layer.adjustments) initial=layer.adjustments->operations;
+    else initial.push_back({engine::AdjustmentKind::Exposure,0});
+    RevisableAdjustmentsDialog dialog(initial,this);
+    AdjustmentPreview preview(resources_,&jobs_,&dialog);
+    std::shared_ptr<engine::EditTransaction> latest;
+    session->busy=true;session->stop=std::stop_source{};refresh(page);
+    const auto valid=[&] {
+        const auto found=sessions_.find(page);
+        return found!=sessions_.end() && found->second==session && tabs_->currentWidget()==page &&
+            session->history->current()==input && session->history->selectedLayer()==target && !session->stop.stop_requested();
+    };
+    const auto request=[&] {
+        latest.reset();dialog.setPreviewState(true);
+        if(!valid()) {preview.cancel();dialog.reject();return;}
+        preview.request(input,target,dialog.operations());
+    };
+    connect(&dialog,&RevisableAdjustmentsDialog::operationsChanged,&dialog,request);
+    connect(&preview,&AdjustmentPreview::previewReady,&dialog,[&](engine::DocumentPtr document,std::shared_ptr<engine::EditTransaction> edit,engine::RgbHistogram histogram) {
+        if(!valid()) {preview.cancel();dialog.reject();return;}
+        latest=std::move(edit);
+        if(auto* canvas=page->property("canvas").value<Canvas*>()) canvas->setDocument(std::move(document),false);
+        dialog.setHistogram(histogram);dialog.setPreviewState(false);
+    });
+    connect(&preview,&AdjustmentPreview::failed,&dialog,[&](const QString& error) {
+        latest.reset();dialog.setPreviewState(false,error);
+        diagnostics_->appendPlainText(error);
+    });
+    connect(&dialog,&QDialog::finished,&preview,[&]{preview.cancel();});
+    connect(this,&MainWindow::editingContextChanged,&dialog,[&]{if(!valid()){preview.cancel();dialog.reject();}});
+    request();
+    const bool accepted=dialog.exec()==QDialog::Accepted;
+    preview.cancel();
+    bool committed=false;
+    if(accepted && latest && valid()) {
+        try {committed=session->history->commit(*latest,"Revisable adjustments",target);session->imageActive=true;}
+        catch(const std::exception& error) {const auto message=QString::fromUtf8(error.what());diagnostics_->appendPlainText(message);statusBar()->showMessage(message);emit operationFinished(false,message);}
+    }
+    session->busy=false;
+    if(sessions_.contains(page) && sessions_.at(page)==session) {
+        if(auto* canvas=page->property("canvas").value<Canvas*>()) canvas->setDocument(session->history->current(),false);
+        refresh(page);
+    }
+    if(committed) {statusBar()->showMessage("Revisable adjustments");emit operationFinished(true,"Revisable adjustments");}
+}
 void MainWindow::applyAdjustment(engine::AdjustmentParameters parameters) {
     if(!currentDocument() || currentBusy()) return;
     try {
@@ -698,7 +846,7 @@ bool MainWindow::chooseSave(bool saveAs) {
 }
 bool MainWindow::mayClose(QWidget* page) {
     const auto session=sessions_.at(page);
-    if(session->busy) { session->stop.request_stop(); statusBar()->showMessage("Cancelling this operation. Close again when it finishes."); return false; }
+    if(session->busy) { session->stop.request_stop(); statusBar()->showMessage("Cancelling this operation. Close again when it finishes."); emit editingContextChanged(); return false; }
     if(!session->history->dirty()) return true;
     const auto choice=QMessageBox::warning(this,"Unsaved changes","Save changes to "+session->title+"?",QMessageBox::Save|QMessageBox::Discard|QMessageBox::Cancel,QMessageBox::Save);
     if(choice==QMessageBox::Discard) return true;

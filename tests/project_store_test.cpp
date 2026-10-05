@@ -205,6 +205,10 @@ int main(int argc,char** argv) {
         });
         expect(read(maskPath)==maskBefore && io::fileIdentity(maskPath)==maskIdentity,"Invalid coverage save preserves exact prior project");
         for(const char* sql:{
+            "UPDATE project SET selection_json='{\"bounds\":[\"0\",\"0\",\"1\",\"1\"],\"featherRadius\":257,\"inverted\":false,\"shape\":\"rectangle\",\"version\":2}'",
+            "UPDATE project SET selection_json='{\"bounds\":[\"0\",\"0\",\"1\",\"1\"],\"featherRadius\":-1,\"inverted\":false,\"shape\":\"rectangle\",\"version\":2}'",
+            "UPDATE project SET selection_json='{\"bounds\":[\"0\",\"0\",\"1\",\"1\"],\"featherRadius\":0,\"inverted\":false,\"shape\":\"triangle\",\"version\":2}'",
+            "UPDATE project SET selection_json='{\"bounds\":[\"0\",\"0\",\"1\",\"1\"],\"extra\":true,\"featherRadius\":0,\"inverted\":false,\"shape\":\"rectangle\",\"version\":2}'",
             "UPDATE project SET selection_json='{\"version\":1,\"shape\":\"triangle\",\"bounds\":[0,0,1,1],\"inverted\":false}'",
             "UPDATE project SET selection_json='{\"version\":1,\"shape\":\"rectangle\",\"bounds\":[0,0,1.5,1],\"inverted\":false}'",
             "UPDATE project SET selection_json='{\"version\":1,\"shape\":\"rectangle\",\"bounds\":[0,0,1,1],\"inverted\":0}'",
@@ -312,7 +316,7 @@ int main(int argc,char** argv) {
         for(const char* sql:{"UPDATE tiles SET checksum=zeroblob(32)",
             "UPDATE tiles SET decoded_size=8", "UPDATE tiles SET payload=x'28b52ffd' WHERE encoding='zstd'",
             "UPDATE tiles SET payload=CAST(payload||x'00' AS BLOB) WHERE encoding='zstd'",
-            "UPDATE project SET required_features_json='[\"future\"]'", "PRAGMA user_version=4",
+            "UPDATE project SET required_features_json='[\"future\"]'", "PRAGMA user_version=99",
             "CREATE VIEW surprise AS SELECT * FROM tiles", "UPDATE layers SET parameters_json='{}'",
             "UPDATE assets SET origin_x=9223372036854775807", "UPDATE layers SET transform=zeroblob(72)"}) {
             const auto bad=dir.filePath("bad.cproj"); expect(QFile::copy(path,bad),"Copy malformed fixture"); change(bad,sql);

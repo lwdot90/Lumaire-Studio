@@ -90,11 +90,18 @@ EditTransaction brushStroke(DocumentPtr document,const Id& target,TileStore& sto
     left=std::max(left-localRadiusX-1,static_cast<double>(extent.x));right=std::min(right+localRadiusX+1,static_cast<double>(extent.x+extent.width));
     top=std::max(top-localRadiusY-1,static_cast<double>(extent.y));bottom=std::min(bottom+localRadiusY+1,static_cast<double>(extent.y+extent.height));
     if(left>=right || top>=bottom) return edit;
+    const auto firstX=floorTile(static_cast<std::int64_t>(std::floor(left))),lastX=floorTile(static_cast<std::int64_t>(std::ceil(right))-1);
+    const auto firstY=floorTile(static_cast<std::int64_t>(std::floor(top))),lastY=floorTile(static_cast<std::int64_t>(std::ceil(bottom))-1);
+    std::shared_ptr<MemoryAdmission::Reservation> maskMetadata;
+    if(settings.paintMask && memory) {
+        const auto count=static_cast<std::uint64_t>(lastX-firstX+1)*static_cast<std::uint64_t>(lastY-firstY+1)+source->tiles.size();
+        constexpr auto nodeBytes=sizeof(TileMap::value_type)+128;
+        if(count>(std::numeric_limits<std::uint64_t>::max()-sizeof(RasterSnapshot)-128)/nodeBytes) throw std::length_error("Mask metadata overflow");
+        maskMetadata=std::make_shared<MemoryAdmission::Reservation>(memory->require(count*nodeBytes+sizeof(RasterSnapshot)+128));
+    }
     TileMap maskTiles=settings.paintMask ? source->tiles : TileMap{};
     bool maskChanged=false;
     if(!settings.paintMask) edit=EditTransaction(document,target);
-    const auto firstX=floorTile(static_cast<std::int64_t>(std::floor(left))),lastX=floorTile(static_cast<std::int64_t>(std::ceil(right))-1);
-    const auto firstY=floorTile(static_cast<std::int64_t>(std::floor(top))),lastY=floorTile(static_cast<std::int64_t>(std::ceil(bottom))-1);
     for(auto ty=firstY;ty<=lastY;++ty) for(auto tx=firstX;tx<=lastX;++tx) {
         cancelled(stop);
         const TileCoord coordinate{tx,ty};const auto region=tileExtent(extent,coordinate);
@@ -166,7 +173,11 @@ EditTransaction brushStroke(DocumentPtr document,const Id& target,TileStore& sto
         auto nodes=document->layers();
         const bool shared=std::any_of(nodes.begin(),nodes.end(),[&](const LayerNode& node){return node.id!=target && node.mask && node.mask->id==source->id;});
         const auto assetId=shared ? Id::generate() : source->id;
-        for(auto& node:nodes) if(node.id==target) node.mask=std::make_shared<const RasterSnapshot>(assetId,source->extent,source->defaultValue,std::move(maskTiles),source->revision+1,source->sourceProfile);
+        for(auto& node:nodes) if(node.id==target) {
+            node.mask=std::shared_ptr<const RasterSnapshot>(new RasterSnapshot(assetId,source->extent,source->defaultValue,std::move(maskTiles),source->revision+1,source->sourceProfile),
+                [maskMetadata](const RasterSnapshot* raster){delete raster;});
+            if(maskMetadata) maskMetadata->commit();
+        }
         edit.setLayers(std::move(nodes));
     }
     return edit;

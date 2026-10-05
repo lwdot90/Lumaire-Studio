@@ -1,4 +1,5 @@
 #include "core/document.h"
+#include "core/retouch.h"
 #include <algorithm>
 #include <cerrno>
 #include <cmath>
@@ -113,6 +114,7 @@ void EditTransaction::replace(TileCoord coordinate, TilePtr tile) {
     if(failed_) throw std::logic_error("Transaction previously failed");
     try {
         if(!target_ || layers_) throw std::logic_error("Pixel edit requires a target and no graph edits");
+        if(input_->layer(*target_).adjustments || input_->layer(*target_).retouch) throw std::logic_error("Rasterize retained edits before editing pixels");
         pixelWrite_=true;
         const auto& source=*input_->layer(*target_).raster;
         const auto region=tileExtent(source.extent,coordinate);
@@ -131,6 +133,7 @@ void EditTransaction::write(TileStore& store, TileCoord coordinate, std::span<co
     if(failed_) throw std::logic_error("Transaction previously failed");
     try {
         if(!target_ || layers_) throw std::logic_error("Pixel edit requires a target and no graph edits");
+        if(input_->layer(*target_).adjustments || input_->layer(*target_).retouch) throw std::logic_error("Rasterize retained edits before editing pixels");
         const auto region=tileExtent(input_->layer(*target_).raster->extent,coordinate);
         replace(coordinate,store.create(static_cast<int>(region.width),static_cast<int>(region.height),pixels));
     } catch(...) { failed_=true; throw; }
@@ -160,7 +163,12 @@ DocumentPtr EditTransaction::finish(std::int64_t revision) const {
         }
         if(pixelsChanged) {
             if(revision<=source.revision) throw std::invalid_argument("Revision must advance");
-            const bool shared=std::count_if(nodes.begin(),nodes.end(),[&](const auto& node){return node.raster.get()==&source;})>1;
+            const bool shared=std::any_of(nodes.begin(),nodes.end(),[&](const auto& node){
+                const auto same=[&](const auto& backing){return backing && backing->id==source.id;};
+                return (node.id!=*target_ && same(node.raster)) || same(node.mask) ||
+                    (node.adjustments && same(node.adjustments->source)) ||
+                    (node.retouch && same(node.retouch->source));
+            });
             auto raster=std::make_shared<const RasterSnapshot>(shared ? Id::generate() : source.id,source.extent,source.defaultValue,tiles_,revision,source.sourceProfile);
             for(auto& node:nodes) if(node.id==*target_) node.raster=std::move(raster);
             changed=true;
@@ -178,20 +186,27 @@ DocumentHistory::DocumentHistory(DocumentPtr initial, std::size_t entryLimit, st
     if(!current_) throw std::invalid_argument("Missing initial document");
     savedRevision_=current_->revision;
     nextRevision_=current_->revision;
-    for(const auto& node:current_->layers()) for(const auto& raster:{node.raster,node.mask}) if(raster) nextRevision_=std::max(nextRevision_,raster->revision);
+    for(const auto& node:current_->layers()) for(const auto& raster:{node.raster,node.mask,node.adjustments ? node.adjustments->source : nullptr,node.retouch ? node.retouch->source : nullptr}) if(raster) nextRevision_=std::max(nextRevision_,raster->revision);
     if(!current_->layers().empty()) selected_=current_->layers().back().id;
 }
 std::size_t DocumentHistory::retainedBytes(const DocumentPtr& current, const std::vector<Entry>& past,
                                           const std::vector<Entry>& future) {
     std::unordered_set<const Tile*> seen;
-    for(const auto& node:current->layers()) for(const auto& raster:{node.raster,node.mask}) if(raster)
+    std::unordered_set<const RetouchStack*> seenRetouch;
+    for(const auto& node:current->layers()) if(node.retouch) seenRetouch.insert(node.retouch.get());
+    for(const auto& node:current->layers()) for(const auto& raster:{node.raster,node.mask,node.adjustments ? node.adjustments->source : nullptr,node.retouch ? node.retouch->source : nullptr}) if(raster)
         for(const auto& [coord,tile]:raster->tiles) seen.insert(tile.get());
     std::size_t bytes=0;
     const auto count=[&](const std::vector<Entry>& entries) {
-        for(const auto& entry:entries) for(const auto& snapshot:{entry.before,entry.after})
-            for(const auto& node:snapshot->layers()) for(const auto& raster:{node.raster,node.mask}) if(raster)
+        for(const auto& entry:entries) for(const auto& snapshot:{entry.before,entry.after}) {
+            for(const auto& node:snapshot->layers()) if(node.retouch && seenRetouch.insert(node.retouch.get()).second) {
+                bytes+=sizeof(RetouchStack)+node.retouch->strokes.capacity()*sizeof(RetouchStroke);
+                for(const auto& stroke:node.retouch->strokes) bytes+=stroke.points.capacity()*sizeof(Coordinate);
+            }
+            for(const auto& node:snapshot->layers()) for(const auto& raster:{node.raster,node.mask,node.adjustments ? node.adjustments->source : nullptr,node.retouch ? node.retouch->source : nullptr}) if(raster)
             for(const auto& [coord,tile]:raster->tiles)
                 if(seen.insert(tile.get()).second) bytes+=tile->retainedBytes();
+        }
     };
     count(past); count(future);
     return bytes;
@@ -224,7 +239,7 @@ bool DocumentHistory::commit(const EditTransaction& transaction, std::string nam
     trim(next,past,future);
     // All potentially throwing allocations precede publication.
     past_.swap(past); future_.swap(future); current_=std::move(next); selected_=std::move(selected); ++nextRevision_;
-    for(const auto& node:current_->layers()) for(const auto& raster:{node.raster,node.mask}) if(raster) nextRevision_=std::max(nextRevision_,raster->revision);
+    for(const auto& node:current_->layers()) for(const auto& raster:{node.raster,node.mask,node.adjustments ? node.adjustments->source : nullptr,node.retouch ? node.retouch->source : nullptr}) if(raster) nextRevision_=std::max(nextRevision_,raster->revision);
     return true;
 }
 bool DocumentHistory::undo() {

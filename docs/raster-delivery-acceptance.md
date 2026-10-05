@@ -106,3 +106,15 @@ There are no remaining D1 blockers in its frozen development-delivery scope.
 Proceed to D2's persisted adjustment/draft contract and one revisable adjustment
 packet. Do not add new photo tools, recovery or professional print requirements
 to D1 retroactively.
+
+## Current-worktree completion audit
+
+Rechecked October 3, 2026 UTC after the first D2 packet, without committing its
+changes. All 49 default release CTests passed (17.82 seconds). Native Wayland
+raster, editor, photo, cancellation, CPU/Vulkan lifecycle and editing-transition
+regressions passed again. Intel GPU comparison executed all suites and 24 blend
+modes with validation and synchronization validation enabled; no suites skipped.
+Current private installation under `build/d2-install` matches the release binary
+and its desktop entry validates. Detailed native results remain under
+`build/release/phase1-current-*.txt`. This confirms D1 completion against the
+current source while retaining the Q1–Q6 qualification exclusions above.

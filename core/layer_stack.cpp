@@ -1,3 +1,4 @@
+#include "core/retouch.h"
 #include "core/layer_stack.h"
 #include "core/resampling.h"
 #include <functional>
@@ -85,6 +86,15 @@ LayerStack::LayerStack(std::vector<LayerNode> nodes):nodes_(std::move(nodes)) {
     std::unordered_map<std::string,const RasterSnapshot*> assets;
     std::unordered_map<std::string,const RasterSnapshot*> masks;
     std::uint64_t pixels=0,maskPixels=0;
+    const auto registerAsset=[&](const std::shared_ptr<const RasterSnapshot>& raster) {
+        const auto [found,inserted]=assets.emplace(raster->id.text(),raster.get());
+        if(!inserted && found->second!=raster.get()) throw std::invalid_argument("Conflicting versions of one asset ID");
+        if(inserted) {
+            const auto& extent=raster->extent;
+            pixels+=static_cast<std::uint64_t>(extent.width)*static_cast<std::uint64_t>(extent.height);
+            if(pixels>100000000) throw std::length_error("Aggregate live raster extents exceed 100 MP");
+        }
+    };
     for(std::size_t i=0;i<nodes_.size();++i) {
         const auto& node=nodes_[i];
         if(node.name.size()>4096) throw std::invalid_argument("Layer name exceeds limit");
@@ -94,9 +104,17 @@ LayerStack::LayerStack(std::vector<LayerNode> nodes):nodes_(std::move(nodes)) {
             throw std::invalid_argument("Invalid layer order or opacity");
         if(node.sampling!=Sampling::Nearest && node.sampling!=Sampling::Bilinear && node.sampling!=Sampling::Lanczos) throw std::invalid_argument("Unsupported layer sampling");
         if(node.folder) {
-            if(node.raster || node.mask || node.blend!=BlendMode::Normal) throw std::invalid_argument("Folders must be pass-through");
+            if(node.raster || node.mask || node.adjustments || node.retouch || node.blend!=BlendMode::Normal) throw std::invalid_argument("Folders must be pass-through");
         } else {
             if(!node.raster) throw std::invalid_argument("Raster layer has no asset");
+            if(node.adjustments) {
+                validateAdjustmentStack(*node.adjustments,*node.raster);
+                registerAsset(node.adjustments->source);
+            }
+            if(node.retouch) {
+                validateRetouchStack(*node.retouch,node.adjustments ? *node.adjustments->source : *node.raster);
+                registerAsset(node.retouch->source);
+            }
             if(node.mask && node.mask->extent!=node.raster->extent)
                 throw std::invalid_argument("Linked mask extent must match its raster");
             if(node.mask) {
@@ -112,13 +130,7 @@ LayerStack::LayerStack(std::vector<LayerNode> nodes):nodes_(std::move(nodes)) {
                     if(maskPixels>100000000) throw std::length_error("Aggregate live mask extents exceed 100 MP");
                 }
             }
-            const auto [found,inserted]=assets.emplace(node.raster->id.text(),node.raster.get());
-            if(!inserted && found->second!=node.raster.get()) throw std::invalid_argument("Conflicting versions of one asset ID");
-            if(inserted) {
-                const auto& extent=node.raster->extent;
-                pixels+=static_cast<std::uint64_t>(extent.width)*static_cast<std::uint64_t>(extent.height);
-                if(pixels>100000000) throw std::length_error("Aggregate live raster extents exceed 100 MP");
-            }
+            registerAsset(node.raster);
         }
     }
     for(const auto& [id,mask]:masks) {

@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QAction>
 #include <QCheckBox>
+#include <QComboBox>
 #include <QToolBar>
 #include <QDoubleSpinBox>
 #include <QLabel>
@@ -16,8 +17,8 @@ using namespace compositor;
 using namespace compositor::engine;
 namespace {
 void expect(bool value,const char* message) {if(!value) throw std::runtime_error(message);}
-void mouse(Canvas& canvas,QEvent::Type type,QPointF point,Qt::MouseButton button,Qt::MouseButtons buttons) {
-    QMouseEvent event(type,point,point,button,buttons,Qt::NoModifier);
+void mouse(Canvas& canvas,QEvent::Type type,QPointF point,Qt::MouseButton button,Qt::MouseButtons buttons,Qt::KeyboardModifiers modifiers=Qt::NoModifier) {
+    QMouseEvent event(type,point,point,button,buttons,modifiers);
     QApplication::sendEvent(&canvas,&event);
 }
 void press(Canvas& canvas,QPointF point) {mouse(canvas,QEvent::MouseButtonPress,point,Qt::LeftButton,Qt::LeftButton);}
@@ -36,11 +37,16 @@ int main(int argc,char** argv) {
         canvas.setDocument(document);canvas.restoreViewport({16,16,1,1,{8,8},false,16,16},"controller fixture");
         std::vector<std::vector<Coordinate>> strokes;std::vector<BrushSettings> settings;
         std::vector<std::optional<Selection>> selections;std::vector<TransformParameters> moves;std::vector<QString> errors;
+        struct Retouch {std::vector<Coordinate> points;BrushSettings brush;Coordinate source;bool heal;double radius;};
+        std::vector<Retouch> retouches;
         ToolController::Callbacks callbacks;
         callbacks.onStroke=[&](auto points,auto brush){strokes.push_back(std::move(points));settings.push_back(brush);};
         callbacks.onSelection=[&](auto selection){selections.push_back(selection);};
         callbacks.onMove=[&](auto transform){moves.push_back(transform);};
         callbacks.onError=[&](auto message){errors.push_back(std::move(message));};
+        callbacks.onRetouch=[&](auto points,auto brush,auto sourcePoint,bool heal,double radius) {
+            retouches.push_back({std::move(points),brush,sourcePoint,heal,radius});
+        };
         ToolController controller(&window,std::move(callbacks));controller.attach(&canvas);controller.setDocument(document);controller.setEnabled(true);
 
         QAction transformCommand("Transform",&window),cropCommand("Crop",&window),deselectCommand("Deselect",&window),invertCommand("Invert",&window);
@@ -178,6 +184,71 @@ int main(int argc,char** argv) {
         press(canvas,{2,2});controller.setForegroundColor(QColor("#33aacc"));release(canvas,{3,3});
         expect(strokes.size()==5 && controller.foregroundColor()==QColor("#33aacc"),"External color change failed to cancel an unfinished stroke");
         controller.setForegroundChangedCallback({});
+        auto* maskMode=controller.brushToolbar()->findChild<QComboBox*>("maskPaintMode");
+        expect(maskMode,"Mask reveal/conceal control is missing");
+        controller.setPaintTargetsAvailable(false,true);controller.setMode(ToolController::Mode::Brush);
+        expect(maskChoice->isChecked() && !maskChoice->isEnabled() && brushAction->isEnabled(),
+            "Adjusted-layer mask did not remain paintable while color pixels were protected");
+        maskMode->setCurrentIndex(0);press(canvas,{2,2});release(canvas,{2,2});
+        expect(strokes.size()==6 && settings.back().paintMask && !settings.back().erasing && settings.back().color.r==1,
+            "Reveal mask gesture did not publish white coverage");
+        maskMode->setCurrentIndex(1);press(canvas,{2,2});release(canvas,{2,2});
+        expect(strokes.size()==7 && settings.back().paintMask && settings.back().color.r==0,
+            "Conceal mask gesture did not publish black coverage");
+        maskMode->setCurrentIndex(0);controller.setMode(ToolController::Mode::Erase);press(canvas,{2,2});release(canvas,{2,2});
+        expect(strokes.size()==8 && settings.back().erasing && settings.back().color.r==0,
+            "Mask eraser must conceal regardless of reveal selection");
+        controller.setMode(ToolController::Mode::Brush);press(canvas,{2,2});maskMode->setCurrentIndex(1);release(canvas,{2,2});
+        expect(strokes.size()==8,"Changing mask coverage published an unfinished gesture");
+        press(canvas,{2,2});controller.setPaintTargetsAvailable(false,true);release(canvas,{2,2});
+        expect(strokes.size()==9,"Unchanged mask availability discarded a live gesture");
+        controller.setPaintTargetsAvailable(false,false);
+        expect(!brushAction->isEnabled() && controller.mode()==ToolController::Mode::RectangleSelection,
+            "Adjusted layer without a mask exposed destructive painting");
+        controller.setMode(ToolController::Mode::Move);
+        expect(controller.mode()==ToolController::Mode::Move,"Protected color pixels disabled layer movement");
+        controller.setPaintTargetsAvailable(true,false);controller.setMode(ToolController::Mode::Brush);
+        expect(!maskChoice->isChecked() && !maskChoice->isEnabled() && brushAction->isEnabled(),
+            "Ordinary layer without a mask did not restore color painting");
+        press(canvas,{2,2});release(canvas,{2,2});
+        expect(strokes.size()==10 && !settings.back().paintMask && settings.back().color.r==float(controller.foregroundColor().redF()),
+            "Returning to ordinary color painting kept mask coverage settings");
+        controller.setPaintTargetsAvailable(false,false);controller.setMode(ToolController::Mode::Clone);
+        auto* cloneAction=controller.toolbar()->findChild<QAction*>("toolClone");
+        auto* healAction=controller.toolbar()->findChild<QAction*>("toolHeal");
+        auto* radius=controller.brushToolbar()->findChild<QDoubleSpinBox*>("retouchRadius");
+        auto* hint=controller.brushToolbar()->findChild<QLabel*>("retouchSourceHint");
+        expect(cloneAction && healAction && radius && hint && cloneAction->isEnabled(),"Retouch tools unavailable on a protected adjusted raster");
+        press(canvas,{5,5});release(canvas,{5,5});
+        expect(retouches.empty() && errors.size()==2 && errors.back().contains("Alt+click"),"Retouch without a source did not explain source selection");
+        mouse(canvas,QEvent::MouseButtonPress,{2,3},Qt::LeftButton,Qt::LeftButton,Qt::AltModifier);
+        release(canvas,{2,3});expect(retouches.empty() && hint->text().startsWith("Source:"),"Alt source click emitted a stroke or failed to update the hint");
+        press(canvas,{5,5});move(canvas,{6,5});release(canvas,{7,5});
+        expect(retouches.size()==1 && !retouches.back().heal && retouches.back().points.size()==3 &&
+            retouches.back().source.x==2.5 && retouches.back().source.y==3.5 && !retouches.back().brush.paintMask,
+            "Clone callback lost document-coordinate source, points or raster target");
+        controller.setMode(ToolController::Mode::Heal);radius->setValue(12);
+        press(canvas,{5,5});release(canvas,{5,5});
+        expect(retouches.size()==2 && retouches.back().heal && retouches.back().radius==12,
+            "Healing callback did not carry its bounded neighborhood radius");
+        press(canvas,{5,5});controller.setEnabled(false);release(canvas,{6,5});
+        expect(retouches.size()==2,"Disabling retouch published an unfinished gesture");controller.setEnabled(true);
+        controller.attach(nullptr);controller.attach(&canvas);press(canvas,{5,5});release(canvas,{5,5});
+        expect(retouches.size()==2 && errors.size()==3,"Changing canvas did not clear the retouch source anchor");
+        controller.setRasterTargetAvailable(false);controller.setMode(ToolController::Mode::Clone);
+        expect(!cloneAction->isEnabled() && !healAction->isEnabled() && controller.mode()==ToolController::Mode::RectangleSelection,
+            "Folder context exposed raster retouch tools");controller.setRasterTargetAvailable(true);
+        controller.setMode(ToolController::Mode::Clone);controller.setRetouchTarget(layer.id);
+        mouse(canvas,QEvent::MouseButtonPress,{-2,3},Qt::LeftButton,Qt::LeftButton,Qt::AltModifier);release(canvas,{-2,3});
+        expect(errors.size()==4 && errors.back().contains("inside the image"),"Out-of-image retouch source was accepted without feedback");
+        mouse(canvas,QEvent::MouseButtonPress,{2,3},Qt::LeftButton,Qt::LeftButton,Qt::AltModifier);release(canvas,{2,3});
+        press(canvas,{5,5});controller.setRetouchTarget(layer.id);release(canvas,{5,5});
+        expect(retouches.size()==3,"Unchanged retouch target discarded a valid gesture/source");
+        press(canvas,{5,5});controller.setRetouchTarget(Id::generate());release(canvas,{6,5});
+        expect(retouches.size()==3,"Changing retouch layer published an unfinished gesture");
+        press(canvas,{5,5});release(canvas,{5,5});
+        expect(retouches.size()==3 && errors.size()==5 && errors.back().contains("Alt+click"),
+            "Changing retouch layer kept the previous layer's source anchor");
         // A closed tab may destroy Canvas before controller context is cleared.
         // The document remains valid until explicit no-document context arrives.
         {
@@ -195,7 +266,7 @@ int main(int argc,char** argv) {
             closed.setEnabled(false);closed.attach(nullptr);closed.setDocument({});closed.setSelection({});
             expect(closingSnapshot.expired() && closingRaster.expired(),"Closed controller context retained document/raster storage");
         }
-        expect(errors.size()==1,"Controller produced unexpected gesture errors");
+        expect(errors.size()==5,"Controller produced unexpected gesture errors");
         std::cout<<"stroke release, erase/mask, selection, move, Space panning, DPR, stroke bound, raster availability, mask preference, context release and cancellation passed\n";
     } catch(const std::exception& error) {std::cerr<<error.what()<<'\n';return 1;}
 }

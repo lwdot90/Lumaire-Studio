@@ -2,6 +2,7 @@
 #include "core/affine.h"
 #include "core/blend.h"
 #include "core/sampling.h"
+#include "core/adjustment_stack.h"
 #include <optional>
 #include <unordered_map>
 
@@ -14,6 +15,7 @@ struct SampleRegion {
     bool contains(double x,double y) const;
 };
 class LayerRegion;
+struct RetouchStack;
 struct LayerNode {
     Id id;
     std::optional<Id> parent;
@@ -27,6 +29,8 @@ struct LayerNode {
     std::string name="Layer";
     std::shared_ptr<const RasterSnapshot> mask;
     bool maskEnabled=true;
+    std::shared_ptr<const AdjustmentStack> adjustments;
+    std::shared_ptr<const RetouchStack> retouch;
     bool operator==(const LayerNode&) const = default;
 };
 // Validated immutable render input. This is the reference layer-stack evaluator,

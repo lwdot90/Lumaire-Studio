@@ -11,6 +11,10 @@ EditTransaction brushStroke(DocumentPtr,const Id&,TileStore&,std::span<const Coo
 // Parameter-only validation; safe before scheduling work on the UI thread.
 bool adjustmentIsNeutral(const AdjustmentParameters&);
 EditTransaction adjustLayer(DocumentPtr,const Id&,TileStore&,const AdjustmentParameters&,std::stop_token={});
+// Revisable operations affect the whole source; layer masks still scope visibility.
+EditTransaction setRevisableAdjustments(DocumentPtr,const Id&,TileStore&,std::vector<AdjustmentParameters>,std::stop_token={});
+// Explicitly discard retained parameters/source, preserving the displayed pixels.
+EditTransaction rasterizeLayerAdjustments(DocumentPtr,const Id&);
 EditTransaction transformLayer(DocumentPtr,const Id&,const TransformParameters&);
 EditTransaction cropDocument(DocumentPtr,Extent bounds);
 EditTransaction resizeDocument(DocumentPtr,int width,int height);

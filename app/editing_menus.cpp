@@ -2,7 +2,9 @@
 #include "app/window.h"
 #include "app/photo_adjustment_dialog.h"
 #include "core/editor_commands.h"
+#include "core/retouch.h"
 #include <QAction>
+#include <QComboBox>
 #include <QDialog>
 #include <QDockWidget>
 #include <QLabel>
@@ -68,6 +70,14 @@ bool ready(MainWindow& window,bool raster=false) {
     const auto selected=window.activeLayer();
     return !raster || (selected && !document->layer(*selected).folder && document->layer(*selected).raster);
 }
+bool pixelReady(MainWindow& window) {
+    return ready(window,true) && !window.currentDocument()->layer(*window.activeLayer()).adjustments && !window.currentDocument()->layer(*window.activeLayer()).retouch;
+}
+bool exposureReady(MainWindow& window) {
+    if(!ready(window,true)) return false;
+    const auto& stack=window.currentDocument()->layer(*window.activeLayer()).adjustments;
+    return !stack || (stack->operations.size()==1 && stack->operations.front().kind==engine::AdjustmentKind::Exposure);
+}
 QAction* action(QMenu* menu,const QString& text,const char* name,const QKeySequence& shortcut={}) {
     auto* result=menu->addAction(text);result->setObjectName(QString::fromLatin1(name));
     if(!shortcut.isEmpty()) result->setShortcut(shortcut);
@@ -109,7 +119,7 @@ void installEditingMenus(MainWindow& window) {
     auto* image=window.menuBar()->addMenu("&Image");image->setObjectName("imageMenu");
     auto* transform=action(image,"Move, scale and rotate…","transformLayerAction",QKeySequence("Ctrl+T"));
     auto* crop=action(image,"Crop…","cropDocumentAction");
-    auto* resize=action(image,"Resize…","resizeDocumentAction",QKeySequence("Ctrl+Alt+I"));
+    auto* resize=action(image,"Canvas size…","resizeDocumentAction",QKeySequence("Ctrl+Alt+C"));
     QObject::connect(image,&QMenu::aboutToShow,&window,[&window,transform,crop,resize]{
         transform->setEnabled(ready(window,true));crop->setEnabled(ready(window));resize->setEnabled(ready(window));
     });
@@ -141,6 +151,37 @@ void installEditingMenus(MainWindow& window) {
         if(dialog.exec()==QDialog::Accepted && document==window.currentDocument() && ready(window)) window.resizeCurrent(width->value(),height->value());
     });
 
+    auto* resample=action(image,"Image size…","resampleDocumentAction",QKeySequence("Ctrl+Alt+I"));
+    QObject::connect(image,&QMenu::aboutToShow,&window,[&window,resample]{resample->setEnabled(ready(window));});
+    QObject::connect(resample,&QAction::triggered,&window,[&window]{
+        if(!ready(window)) return;
+        const auto document=window.currentDocument();
+        QDialog dialog(&window);dialog.setWindowTitle("Image size");dialog.setObjectName("imageResampleDialog");
+        auto* form=new QFormLayout(&dialog);
+        auto* width=integer(form,"Width (pixels)","resampleWidth",document->width,1,30000);
+        auto* height=integer(form,"Height (pixels)","resampleHeight",document->height,1,30000);
+        height->setMaximum(std::min(30000,100000000/width->value()));
+        QObject::connect(width,&QSpinBox::valueChanged,height,[height](int value){height->setMaximum(std::min(30000,100000000/value));});
+        auto* filter=new QComboBox(&dialog);filter->setObjectName("resampleFilter");filter->addItems({"Nearest neighbor","Bilinear","Lanczos"});filter->setCurrentIndex(2);form->addRow("Resampling",filter);
+        buttons(dialog,form);
+        if(dialog.exec()==QDialog::Accepted && document==window.currentDocument() && ready(window))
+            window.resampleCurrent(width->value(),height->value(),static_cast<engine::Sampling>(filter->currentIndex()));
+    });
+
+    auto* retouchStrength=action(image,"Retouch strength…","retouchStrengthAction");
+    QObject::connect(image,&QMenu::aboutToShow,&window,[&window,retouchStrength]{const auto document=window.currentDocument();const auto id=window.activeLayer();retouchStrength->setEnabled(ready(window,true) && id && document->layer(*id).retouch);});
+    QObject::connect(retouchStrength,&QAction::triggered,&window,[&window]{
+        if(!ready(window,true)) return;
+        const auto document=window.currentDocument();const auto id=window.activeLayer();if(!id || !document->layer(*id).retouch) return;
+        const auto& strokes=document->layer(*id).retouch->strokes;
+        QDialog dialog(&window);dialog.setWindowTitle("Retouch strength");dialog.setObjectName("retouchStrengthDialog");auto* form=new QFormLayout(&dialog);
+        auto* choice=new QComboBox(&dialog);choice->setObjectName("retouchStrokeChoice");
+        for(std::size_t i=0;i<strokes.size();++i) choice->addItem(QString("%1 — %2").arg(i+1).arg(strokes[i].kind==engine::RetouchKind::Heal ? "Healing" : "Clone"));
+        form->addRow("Stroke",choice);auto* strength=real(form,"Strength (%)","retouchStrength",strokes.front().opacity*100,0,100);
+        QObject::connect(choice,&QComboBox::currentIndexChanged,strength,[strength,&strokes](int index){strength->setValue(strokes.at(static_cast<std::size_t>(index)).opacity*100);});buttons(dialog,form);
+        if(dialog.exec()==QDialog::Accepted && document==window.currentDocument() && id==window.activeLayer() && ready(window,true)) window.reviseRetouchStrength(static_cast<std::size_t>(choice->currentIndex()),strength->value()/100);
+    });
+
     auto* select=window.menuBar()->addMenu("&Select");select->setObjectName("selectionMenu");
     auto* rectangleSelection=action(select,"Rectangle…","rectangleSelectionAction");
     auto* ellipseSelection=action(select,"Ellipse…","ellipseSelectionAction");
@@ -160,6 +201,15 @@ void installEditingMenus(MainWindow& window) {
     QObject::connect(clear,&QAction::triggered,&window,[&window]{if(ready(window)) window.setSelectionCurrent({});});
     QObject::connect(invert,&QAction::triggered,&window,[&window]{if(ready(window) && window.currentDocument()->selection){auto selection=*window.currentDocument()->selection;selection.inverted=!selection.inverted;window.setSelectionCurrent(selection);}});
 
+    auto* featherSelection=action(select,"Feather…","featherSelectionAction");
+    QObject::connect(select,&QMenu::aboutToShow,&window,[&window,featherSelection]{featherSelection->setEnabled(ready(window) && window.currentDocument()->selection.has_value());});
+    QObject::connect(featherSelection,&QAction::triggered,&window,[&window]{
+        if(!ready(window) || !window.currentDocument()->selection) return;
+        const auto document=window.currentDocument();auto selection=*document->selection;
+        bool accepted=false;const auto radius=QInputDialog::getDouble(&window,"Feather selection","Radius (document pixels)",selection.featherRadius,0,256,2,&accepted);
+        if(accepted && document==window.currentDocument() && ready(window)) {selection.featherRadius=radius;window.setSelectionCurrent(selection);}
+    });
+
     auto* masks=window.menuBar()->addMenu("Layer &Mask");masks->setObjectName("layerMaskMenu");
     auto* reveal=action(masks,"Reveal all","createRevealMaskAction");
     auto* fromSelection=action(masks,"From selection","createSelectionMaskAction");
@@ -170,6 +220,14 @@ void installEditingMenus(MainWindow& window) {
         const bool hasMask=raster && document->layer(*id).mask;
         reveal->setEnabled(raster);fromSelection->setEnabled(raster && document->selection.has_value());
         remove->setEnabled(hasMask);enabled->setEnabled(hasMask);enabled->setChecked(hasMask && document->layer(*id).maskEnabled);
+    });
+    auto* featherMask=action(masks,"Feather mask…","featherLayerMaskAction");
+    QObject::connect(masks,&QMenu::aboutToShow,&window,[&window,featherMask]{const auto document=window.currentDocument();const auto id=window.activeLayer();featherMask->setEnabled(ready(window,true) && id && document->layer(*id).mask);});
+    QObject::connect(featherMask,&QAction::triggered,&window,[&window]{
+        if(!ready(window,true)) return;
+        const auto document=window.currentDocument();const auto id=window.activeLayer();if(!id || !document->layer(*id).mask) return;
+        bool accepted=false;const auto radius=QInputDialog::getDouble(&window,"Feather layer mask","Radius (source pixels)",4,0,32,2,&accepted);
+        if(accepted && document==window.currentDocument() && id==window.activeLayer() && ready(window,true)) window.featherMaskCurrent(radius);
     });
     QObject::connect(reveal,&QAction::triggered,&window,[&window]{if(ready(window,true)) window.createMaskCurrent(false);});
     QObject::connect(fromSelection,&QAction::triggered,&window,[&window]{if(ready(window,true) && window.currentDocument()->selection) window.createMaskCurrent(true);});
@@ -201,7 +259,7 @@ void installEditingMenus(MainWindow& window) {
                          AdjustmentMenu{"Curves…","curvesAdjustmentAction","Edit the tonal response curve","",engine::AdjustmentKind::Curves,0,0,0},
                          AdjustmentMenu{"Color Balance…","colorBalanceAdjustmentAction","Warmth and green–magenta tint","",engine::AdjustmentKind::ColorBalance,0,0,0}}) {
         auto* item=action(adjust,QString::fromUtf8(entry.label),entry.name);
-        item->setEnabled(ready(window,true));
+        item->setEnabled(pixelReady(window));
         item->setIcon(adjustmentIcon(entry.kind));
         auto* button=new QToolButton(photoPanel);button->setObjectName(QString::fromLatin1(entry.name)+"Button");
         button->setProperty("class","adjustmentButton");button->setProperty("role","adjustmentButton");
@@ -211,23 +269,52 @@ void installEditingMenus(MainWindow& window) {
         button->setToolTip(QString::fromUtf8(entry.description));
         button->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
         grid->addWidget(button,adjustmentIndex/2,adjustmentIndex%2,Qt::AlignHCenter);++adjustmentIndex;
-        const auto update=[&window,item]{item->setEnabled(ready(window,true));};
+        const auto update=[&window,item]{item->setEnabled(pixelReady(window));};
         QObject::connect(adjust,&QMenu::aboutToShow,&window,update);
         QObject::connect(&window,&MainWindow::editingContextChanged,&window,update);
         QObject::connect(item,&QAction::triggered,&window,[&window,entry]{
-            if(!ready(window,true)) return;
+            if(!pixelReady(window)) return;
             const auto document=window.currentDocument();const auto selected=window.activeLayer();
             if(entry.kind==engine::AdjustmentKind::Levels || entry.kind==engine::AdjustmentKind::Curves || entry.kind==engine::AdjustmentKind::ColorBalance) {
                 PhotoAdjustmentDialog dialog(entry.kind,&window);
-                if(dialog.exec()==QDialog::Accepted && document==window.currentDocument() && selected==window.activeLayer() && ready(window,true))
+                if(dialog.exec()==QDialog::Accepted && document==window.currentDocument() && selected==window.activeLayer() && pixelReady(window))
                     window.applyAdjustment(dialog.parameters());
                 return;
             }
             bool accepted=false;
             const auto value=QInputDialog::getDouble(&window,QString::fromUtf8(entry.label),QString::fromUtf8(entry.valueLabel),entry.neutral,entry.minimum,entry.maximum,3,&accepted);
-            if(accepted && document==window.currentDocument() && selected==window.activeLayer() && ready(window,true)) window.applyAdjustment({entry.kind,value});
+            if(accepted && document==window.currentDocument() && selected==window.activeLayer() && pixelReady(window)) window.applyAdjustment({entry.kind,value});
         });
     }
+    auto* revisableStack=action(adjust,"Revisable adjustments…","revisableAdjustmentsAction");
+    revisableStack->setIcon(adjustmentIcon(engine::AdjustmentKind::Curves));
+    revisableStack->setToolTip("Preview, reorder and revise retained photo adjustments after reopening");
+    auto* stackButton=new QToolButton(photoPanel);stackButton->setObjectName("revisableAdjustmentsActionButton");
+    stackButton->setDefaultAction(revisableStack);stackButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);stackButton->setIconSize({22,22});
+    stackButton->setProperty("class","adjustmentButton");stackButton->setProperty("role","adjustmentButton");
+    stackButton->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Preferred);
+    photoLayout->insertWidget(1,stackButton);
+    QObject::connect(revisableStack,&QAction::triggered,&window,&MainWindow::editRevisableAdjustments);
+    auto* revisable=action(adjust,"Revisable Exposure…","revisableExposureAction");
+    revisable->setIcon(adjustmentIcon(engine::AdjustmentKind::Exposure));
+    auto* revisableButton=new QToolButton(photoPanel);revisableButton->setObjectName("revisableExposureActionButton");
+    revisableButton->setDefaultAction(revisable);revisableButton->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);revisableButton->setIconSize({22,22});
+    revisableButton->setProperty("class","adjustmentButton");revisableButton->setProperty("role","adjustmentButton");
+    revisableButton->setText("Revisable\nExposure");revisableButton->setToolTip("Preview and retain whole-layer exposure for revision after reopening");
+    QObject::connect(revisable,&QAction::changed,revisableButton,[revisableButton]{revisableButton->setText("Revisable\nExposure");});
+    grid->addWidget(revisableButton,adjustmentIndex/2,adjustmentIndex%2,Qt::AlignHCenter);
+    QObject::connect(revisable,&QAction::triggered,&window,&MainWindow::editRevisableExposure);
+    adjust->addSeparator();
+    auto* rasterize=action(adjust,"Rasterize retained edits","rasterizeAdjustmentsAction");
+    rasterize->setToolTip("Keep displayed pixels and discard retained adjustment and retouch settings; undo restores them");
+    QObject::connect(rasterize,&QAction::triggered,&window,&MainWindow::rasterizeCurrentAdjustments);
+    const auto updateRevisable=[&window,revisableStack,revisable,rasterize] {
+        revisableStack->setEnabled(ready(window,true));
+        revisable->setEnabled(exposureReady(window));
+        rasterize->setEnabled(ready(window,true) && bool(window.currentDocument()->layer(*window.activeLayer()).adjustments || window.currentDocument()->layer(*window.activeLayer()).retouch));
+    };
+    updateRevisable();QObject::connect(adjust,&QMenu::aboutToShow,&window,updateRevisable);
+    QObject::connect(&window,&MainWindow::editingContextChanged,&window,updateRevisable);
     photoLayout->addStretch();
 }
 }

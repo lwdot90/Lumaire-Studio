@@ -11,6 +11,25 @@ namespace {
 void checkpoint(std::stop_token stop) {
     if(stop.stop_requested()) throw std::runtime_error("Adjustment canceled");
 }
+void validateCurve(const std::vector<CurvePoint>& curve) {
+    if(curve.size()<2 || curve.size()>16 || curve.front().input!=0 || curve.back().input!=1)
+        throw std::invalid_argument("Curve requires 2 to 16 points and input endpoints 0 and 1");
+    for(std::size_t i=0;i<curve.size();++i) {
+        if(!std::isfinite(curve[i].input) || !std::isfinite(curve[i].output) ||
+           curve[i].output<0 || curve[i].output>1 || (i && curve[i].input<=curve[i-1].input))
+            throw std::invalid_argument("Invalid curve point");
+    }
+}
+bool identityCurve(const std::vector<CurvePoint>& curve) {
+    return std::all_of(curve.begin(),curve.end(),[](const CurvePoint& point){return point.input==point.output;});
+}
+float mappedCurve(float channel,const std::vector<CurvePoint>& curve) {
+    std::size_t upper=1;
+    while(upper+1<curve.size() && channel>curve[upper].input) ++upper;
+    const auto& low=curve[upper-1];const auto& high=curve[upper];
+    const double fraction=(static_cast<double>(channel)-low.input)/(high.input-low.input);
+    return static_cast<float>(low.output+(high.output-low.output)*fraction);
+}
 void validate(const AdjustmentParameters& parameters) {
     double minimum=0,maximum=0;
     switch(parameters.kind) {
@@ -29,14 +48,8 @@ void validate(const AdjustmentParameters& parameters) {
             return;
         }
         case AdjustmentKind::Curves: {
-            const auto& curve=parameters.curve;
-            if(curve.size()<2 || curve.size()>16 || curve.front().input!=0 || curve.back().input!=1)
-                throw std::invalid_argument("Curve requires 2 to 16 points and input endpoints 0 and 1");
-            for(std::size_t i=0;i<curve.size();++i) {
-                if(!std::isfinite(curve[i].input) || !std::isfinite(curve[i].output) ||
-                   curve[i].output<0 || curve[i].output>1 || (i && curve[i].input<=curve[i-1].input))
-                    throw std::invalid_argument("Invalid curve point");
-            }
+            validateCurve(parameters.curve);
+            for(const auto& curve:parameters.channelCurves) validateCurve(curve);
             return;
         }
         case AdjustmentKind::ColorBalance: {
@@ -58,7 +71,8 @@ bool neutral(const AdjustmentParameters& parameters) {
         return levels.inputBlack==0 && levels.inputWhite==1 && levels.gamma==1 && levels.outputBlack==0 && levels.outputWhite==1;
     }
     if(parameters.kind==AdjustmentKind::Curves)
-        return std::all_of(parameters.curve.begin(),parameters.curve.end(),[](const CurvePoint& point){return point.input==point.output;});
+        return identityCurve(parameters.curve) &&
+            std::all_of(parameters.channelCurves.begin(),parameters.channelCurves.end(),identityCurve);
     if(parameters.kind==AdjustmentKind::ColorBalance)
         return parameters.colorBalance.warmth==0 && parameters.colorBalance.tint==0;
     return parameters.value==(parameters.kind==AdjustmentKind::Saturation ? 1 : 0);
@@ -72,6 +86,7 @@ struct PreparedAdjustment {
     float exposure=1;
     std::array<float,3> gains{1,1,1};
     double inputRange=1,inverseGamma=1,outputRange=1;
+    std::array<bool,3> identityChannels{true,true,true};
 };
 PreparedAdjustment prepare(const AdjustmentParameters& parameters) {
     PreparedAdjustment prepared;
@@ -86,6 +101,8 @@ PreparedAdjustment prepare(const AdjustmentParameters& parameters) {
         prepared.inverseGamma=1/parameters.levels.gamma;
         prepared.outputRange=parameters.levels.outputWhite-parameters.levels.outputBlack;
     }
+    if(parameters.kind==AdjustmentKind::Curves)
+        for(std::size_t i=0;i<3;++i) prepared.identityChannels[i]=identityCurve(parameters.channelCurves[i]);
     return prepared;
 }
 Pixel adjusted(Pixel original,const AdjustmentParameters& parameters,const PreparedAdjustment& prepared) {
@@ -107,14 +124,11 @@ Pixel adjusted(Pixel original,const AdjustmentParameters& parameters,const Prepa
             channel=static_cast<float>(parameters.levels.outputBlack+prepared.outputRange*std::pow(normalized,prepared.inverseGamma));
         }
     } else if(parameters.kind==AdjustmentKind::Curves) {
-        // At most sixteen validated points; no per-pixel allocation or lookup approximation.
-        for(auto& channel:codes) {
-            std::size_t upper=1;
-            while(upper+1<parameters.curve.size() && channel>parameters.curve[upper].input) ++upper;
-            const auto& low=parameters.curve[upper-1];
-            const auto& high=parameters.curve[upper];
-            const double fraction=(static_cast<double>(channel)-low.input)/(high.input-low.input);
-            channel=static_cast<float>(low.output+(high.output-low.output)*fraction);
+        // Preserve legacy master math exactly. Channel mapping has no packing
+        // between stages, and identity channels add no arithmetic to old output.
+        for(std::size_t i=0;i<codes.size();++i) {
+            codes[i]=mappedCurve(codes[i],parameters.curve);
+            if(!prepared.identityChannels[i]) codes[i]=mappedCurve(codes[i],parameters.channelCurves[i]);
         }
     } else {
         const float value=static_cast<float>(parameters.value);
